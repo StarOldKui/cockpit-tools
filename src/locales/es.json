@@ -1606,6 +1606,7 @@
     "installFailed": "La instalación del sistema falló. Inténtalo más tarde o descarga el paquete manualmente.",
     "restartRequiredAfterInstall": "La actualización ya está instalada. Reinicia la aplicación manualmente para completar el cambio.",
     "stoppingApiService": "Deteniendo servicio API...",
+    "stopApiServiceFailed": "No se pudo detener el servicio API. Desactívalo primero e inténtalo de nuevo.",
     "skipThisVersion": "Omitir esta versión",
     "skipFailed": "No se pudo omitir esta actualización: {{error}}"
   },
@@ -1723,12 +1724,18 @@
       "addressKind": "Tipo de dirección",
       "addressLocal": "Equipo",
       "addressLan": "Red local",
+      "accessScopeLabel": "Ámbito de acceso",
+      "accessScopeLocalhost": "Solo local",
+      "accessScopeLan": "Red local",
+      "accessScopeLocalhostShort": "Solo local",
+      "accessScopeLanShort": "Local+red",
+      "accessScopeSaveSuccess": "Ámbito de acceso del servicio API actualizado",
       "apiKey": "Clave",
       "statusRunning": "En ejecución",
       "statusStopped": "Detenido",
       "statusDisabled": "Desactivado",
       "emptyMembers": "No hay cuentas en la colección",
-      "footerHint": "Escucha en local y en LAN",
+      "footerHint": "Ámbito de acceso: {{scope}}",
       "manageAccounts": "Gestionar cuentas",
       "rotateKey": "Rotar clave",
       "rotateConfirmMessage": "Después del restablecimiento, la clave actual del servicio API dejará de funcionar de inmediato y las solicitudes en curso podrían quedar no disponibles. ¿Continuar?",
@@ -1760,10 +1767,29 @@
         "manageMembers": "Gestionar miembros"
       },
       "entryAction": "Agregar al servicio API",
-      "testAction": "Probar servicio API",
-      "testSuccess": "La prueba del servicio API fue correcta ({{count}} modelos)",
-      "testTimeout": "La prueba agotó el tiempo. Confirma que el servicio local esté en ejecución.",
+      "testAction": "Probar",
+      "testDialogTitle": "Probar servicio API",
+      "testDialogDesc": "Envía una solicitud real por Codex CLI para verificar el servicio local, la clave y la respuesta ascendente.",
+      "testProgressTitle": "Probando servicio",
+      "testProgressDesc": "Se está enviando una solicitud real al servicio API local. Espera.",
+      "testOutputTitle": "Resultado devuelto",
+      "testResultTitle": "Resultado de la comprobación",
+      "testSuccess": "Comprobación correcta: el servicio local, la clave y la respuesta ascendente funcionan ({{model}}, {{latency}}). Si Codex sigue devolviendo 502, revisa la Base URL, la API Key o el entorno de ejecución de Codex.",
+      "testFailureStage": "Etapa detectada",
+      "testFailureCause": "Motivo del fallo",
+      "testFailureSuggestion": "Corrección sugerida",
+      "testFailureStatus": "Estado HTTP",
+      "testFailureModel": "Modelo probado",
+      "testFailureDetail": "Detalles de diagnóstico",
+      "testFailureCliOutput": "Salida CLI",
+      "testFailureGatewayOutput": "Respuesta de la puerta de enlace",
+      "testTimeout": "La comprobación con solicitud real agotó el tiempo. Revisa el servicio local, el proxy o la red ascendente.",
       "testUnavailable": "La URL actual del servicio API no está disponible",
+      "testConnectFailed": "No se puede conectar a {{url}}. Confirma que el servicio API esté en ejecución, que el puerto no haya cambiado y que nada lo bloquee.",
+      "testAuthFailed": "El servicio responde, pero falló la autenticación: {{detail}}. Revisa la clave del servicio API o el estado de inicio de sesión de la cuenta.",
+      "testServiceUnavailable": "El servicio responde, pero no está disponible: {{detail}}. Revisa si el servicio está activado, si la colección de cuentas está vacía o si las cuentas son utilizables.",
+      "testRateLimited": "El servicio responde, pero el ascendente tiene límite de velocidad o cuota agotada: {{detail}}.",
+      "testHttpFailed": "El servicio responde, pero la solicitud devolvió HTTP {{status}}: {{detail}}.",
       "activateAction": "Iniciar servicio API",
       "activateSuccess": "Se cambió al servicio API",
       "dashboardAction": "Panel del servicio",
@@ -1778,8 +1804,8 @@
       "statsTitle": "Totales",
       "accountStatsTitle": "Por cuenta",
       "statsEmpty": "Aún no hay estadísticas",
-      "summaryMeta": "{{count}} cuentas · Local/LAN",
-      "summaryMetaUnconfigured": "Sin configurar · Local/LAN",
+      "summaryMeta": "{{count}} cuentas · {{scope}}",
+      "summaryMetaUnconfigured": "Sin configurar · {{scope}}",
       "memberTitle": "Miembros de la colección",
       "stats": {
         "requests": "Solicitudes",
@@ -1858,6 +1884,10 @@
         "viewFull": "Ver estadísticas completas",
         "modalTitle": "Bolsa de cuota del servicio API",
         "empty": "Aún no hay estadísticas de cuota"
+      },
+      "oauthBinding": {
+        "desc": "Al cambiar al servicio API o probarlo, la sesión usa la cuenta OAuth vinculada y el Provider usa la configuración actual del servicio API.",
+        "currentService": "Servicio API: {{name}}"
       }
     },
     "local": {
@@ -2262,6 +2292,21 @@
         "cockpit_api": {
           "name": "Cockpit Api"
         }
+      },
+      "oauthBinding": {
+        "label": "Vínculo OAuth",
+        "unbound": "Sin vínculo",
+        "action": "Vincular OAuth",
+        "actionShort": "Vincular",
+        "title": "Vincular cuenta OAuth",
+        "desc": "Al cambiar a esta cuenta API Key, la sesión usa la cuenta OAuth vinculada y el Provider usa la configuración de esta cuenta API Key.",
+        "currentAccount": "Cuenta API Key: {{name}}",
+        "selectLabel": "Selecciona cuenta OAuth",
+        "empty": "No hay cuentas OAuth. Añade primero una cuenta autorizada con OAuth.",
+        "validationRequired": "Selecciona una cuenta OAuth",
+        "saveSuccess": "Vínculo OAuth actualizado",
+        "saveFailed": "Error al vincular OAuth: {{error}}",
+        "switchRequiresBinding": "Vincula primero una cuenta OAuth"
       }
     },
     "modelProviders": {
@@ -2662,7 +2707,9 @@
     "cursorRefreshInterval": "Actualización automática de cuota",
     "gemini": {
       "title": "Ajustes de Gemini Cli",
-      "appPath": "Ruta de Gemini Cli"
+      "appPath": "Ruta de Gemini Cli",
+      "syncWsl": "Sincronizar configuración de WSL",
+      "syncWslDesc": "Sobrescribir automáticamente la configuración de .gemini en WSL al cambiar de cuenta"
     },
     "geminiRefreshInterval": "Actualización automática de cuota",
     "codebuddy": {

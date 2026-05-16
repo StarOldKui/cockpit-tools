@@ -1655,7 +1655,8 @@
     "authorizing": "Waiting for system authorization...",
     "installFailed": "System installation failed. Try again later or download manually.",
     "restartRequiredAfterInstall": "The update is installed. Restart the app manually to finish switching.",
-    "stoppingApiService": "Stopping API service..."
+    "stoppingApiService": "Stopping API service...",
+    "stopApiServiceFailed": "Couldn't stop the API service. Disable it first and try again."
   },
   "closeDialog": {
     "title": "Close Window",
@@ -1799,6 +1800,12 @@
       "addressKind": "Address type",
       "addressLocal": "Local",
       "addressLan": "LAN",
+      "accessScopeLabel": "Access Scope",
+      "accessScopeLocalhost": "Local Only",
+      "accessScopeLan": "LAN",
+      "accessScopeLocalhostShort": "Local Only",
+      "accessScopeLanShort": "Local+LAN",
+      "accessScopeSaveSuccess": "API service access scope updated",
       "apiPortUrl": "API Port URL",
       "apiKey": "API Key",
       "modelId": "Model ID",
@@ -1809,17 +1816,36 @@
       "statusDisabled": "Disabled",
       "statusUnconfigured": "Not Configured",
       "emptyMembers": "Add accounts to the API service, then click Start. No extra setup is required.",
-      "footerHint": "Listens on local and LAN",
+      "footerHint": "Access scope: {{scope}}",
       "memberOnlyLocal": "Local/LAN",
       "manageAccounts": "Manage Accounts",
       "rotateKey": "Reset Key",
       "rotateConfirmMessage": "The current API service key will stop working immediately after reset, and in-flight requests may become unavailable. Continue?",
       "disableService": "Disable Service",
       "enableService": "Enable Service",
-      "testAction": "Test API Service",
-      "testSuccess": "API service test passed ({{count}} models)",
-      "testTimeout": "Test timed out. Confirm the local service is running.",
+      "testAction": "Test",
+      "testDialogTitle": "Test API Service",
+      "testDialogDesc": "Send one real request through Codex CLI to verify the local service, key, and upstream response.",
+      "testProgressTitle": "Testing service",
+      "testProgressDesc": "Sending a real request to the local API service. Please wait.",
+      "testOutputTitle": "Returned result",
+      "testResultTitle": "Service check result",
+      "testSuccess": "Service check passed: local service, key, and upstream response are healthy ({{model}}, {{latency}}). If Codex still returns 502, check Codex Base URL, API Key, or runtime environment.",
+      "testFailureStage": "Failure stage",
+      "testFailureCause": "Failure reason",
+      "testFailureSuggestion": "Suggested fix",
+      "testFailureStatus": "HTTP status",
+      "testFailureModel": "Test model",
+      "testFailureDetail": "Diagnostic details",
+      "testFailureCliOutput": "CLI output",
+      "testFailureGatewayOutput": "Gateway response",
+      "testTimeout": "Real request check timed out. Check the local service, proxy, or upstream network.",
       "testUnavailable": "The current API service URL is unavailable",
+      "testConnectFailed": "Cannot connect to {{url}}. Confirm the API service is running, the port has not changed, and nothing is blocking it.",
+      "testAuthFailed": "Service is reachable, but authentication failed: {{detail}}. Check the API service key or account sign-in state.",
+      "testServiceUnavailable": "Service is reachable, but currently unavailable: {{detail}}. Check whether the service is enabled, the account collection is empty, or accounts are usable.",
+      "testRateLimited": "Service is reachable, but upstream is rate limited or quota is exhausted: {{detail}}.",
+      "testHttpFailed": "Service is reachable, but the request returned HTTP {{status}}: {{detail}}.",
       "activateAction": "Start API Service",
       "enableBeforeActivateTitle": "Service Not Enabled",
       "enableBeforeActivateMessage": "The API service is currently disabled and must be enabled first. Enable it and switch now?",
@@ -1862,8 +1888,8 @@
       "refreshStatsSuccess": "API service stats have been refreshed",
       "accountStatsTitle": "By Account",
       "statsEmpty": "No stats yet",
-      "summaryMeta": "{{count}} accounts · Local/LAN",
-      "summaryMetaUnconfigured": "Not configured · Local/LAN",
+      "summaryMeta": "{{count}} accounts · {{scope}}",
+      "summaryMetaUnconfigured": "Not configured · {{scope}}",
       "expandDetails": "Expand details",
       "collapseDetails": "Collapse details",
       "hideEntryAction": "Hide API Service Entry",
@@ -1931,6 +1957,10 @@
         "available": "Regular Overview",
         "manageMembers": "Manage Members",
         "save": "Save Collection"
+      },
+      "oauthBinding": {
+        "desc": "When switching to or testing the API service, the login state uses the bound OAuth account while the Provider uses the current API service configuration.",
+        "currentService": "API Service: {{name}}"
       }
     },
     "api": {
@@ -2022,6 +2052,21 @@
         "apiKeyCannotBeUrl": "API key cannot be a URL. Please check if the fields are swapped.",
         "baseUrlInvalid": "Invalid Base URL. Please enter a full http:// or https:// URL.",
         "apiKeyEqualsBaseUrl": "API key cannot be the same as Base URL."
+      },
+      "oauthBinding": {
+        "label": "OAuth Link",
+        "unbound": "Not linked",
+        "action": "Link OAuth",
+        "actionShort": "Link",
+        "title": "Link OAuth Account",
+        "desc": "When switching to this API-key account, the sign-in state uses the linked OAuth account while Provider uses this API-key account config.",
+        "currentAccount": "API-key account: {{name}}",
+        "selectLabel": "Select OAuth account",
+        "empty": "No OAuth accounts yet. Add an OAuth-authorized account first.",
+        "validationRequired": "Select an OAuth account.",
+        "saveSuccess": "OAuth link updated.",
+        "saveFailed": "Failed to link OAuth: {{error}}",
+        "switchRequiresBinding": "Link an OAuth account first."
       }
     },
     "cockpitApi": {
@@ -2819,7 +2864,9 @@
     },
     "gemini": {
       "title": "Gemini Cli Settings",
-      "appPath": "Gemini Cli Path"
+      "appPath": "Gemini Cli Path",
+      "syncWsl": "Sync WSL Configuration",
+      "syncWslDesc": "Automatically overwrite the .gemini configuration in WSL when switching accounts"
     },
     "geminiRefreshInterval": "Quota Auto Refresh",
     "error": {

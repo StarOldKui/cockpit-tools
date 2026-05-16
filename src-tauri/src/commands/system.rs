@@ -75,6 +75,8 @@ pub struct GeneralConfig {
     pub cursor_auto_refresh_minutes: i32,
     /// Gemini 自动刷新间隔（分钟），-1 表示禁用
     pub gemini_auto_refresh_minutes: i32,
+    /// Gemini 切号时是否同步覆盖 WSL 配置 (Windows Only)
+    pub gemini_sync_wsl: bool,
     /// CodeBuddy 自动刷新间隔（分钟），-1 表示禁用
     pub codebuddy_auto_refresh_minutes: i32,
     /// CodeBuddy CN 自动刷新间隔（分钟），-1 表示禁用
@@ -1115,6 +1117,7 @@ pub fn save_network_config(
         kiro_auto_refresh_minutes: current.kiro_auto_refresh_minutes,
         cursor_auto_refresh_minutes: current.cursor_auto_refresh_minutes,
         gemini_auto_refresh_minutes: current.gemini_auto_refresh_minutes,
+        gemini_sync_wsl: current.gemini_sync_wsl,
         codebuddy_auto_refresh_minutes: current.codebuddy_auto_refresh_minutes,
         codebuddy_cn_auto_refresh_minutes: current.codebuddy_cn_auto_refresh_minutes,
         workbuddy_auto_refresh_minutes: current.workbuddy_auto_refresh_minutes,
@@ -1379,6 +1382,7 @@ pub fn get_general_config(app: tauri::AppHandle) -> Result<GeneralConfig, String
         kiro_auto_refresh_minutes: user_config.kiro_auto_refresh_minutes,
         cursor_auto_refresh_minutes: user_config.cursor_auto_refresh_minutes,
         gemini_auto_refresh_minutes: user_config.gemini_auto_refresh_minutes,
+        gemini_sync_wsl: user_config.gemini_sync_wsl,
         codebuddy_auto_refresh_minutes: user_config.codebuddy_auto_refresh_minutes,
         codebuddy_cn_auto_refresh_minutes: user_config.codebuddy_cn_auto_refresh_minutes,
         workbuddy_auto_refresh_minutes: user_config.workbuddy_auto_refresh_minutes,
@@ -1505,6 +1509,7 @@ pub fn save_general_config(
     kiro_auto_refresh_minutes: Option<i32>,
     cursor_auto_refresh_minutes: Option<i32>,
     gemini_auto_refresh_minutes: Option<i32>,
+    gemini_sync_wsl: Option<bool>,
     codebuddy_auto_refresh_minutes: Option<i32>,
     codebuddy_cn_auto_refresh_minutes: Option<i32>,
     workbuddy_auto_refresh_minutes: Option<i32>,
@@ -1708,6 +1713,8 @@ pub fn save_general_config(
             .unwrap_or(current.cursor_auto_refresh_minutes),
         gemini_auto_refresh_minutes: gemini_auto_refresh_minutes
             .unwrap_or(current.gemini_auto_refresh_minutes),
+        gemini_sync_wsl: gemini_sync_wsl
+            .unwrap_or(current.gemini_sync_wsl),
         codebuddy_auto_refresh_minutes: codebuddy_auto_refresh_minutes
             .unwrap_or(current.codebuddy_auto_refresh_minutes),
         codebuddy_cn_auto_refresh_minutes: codebuddy_cn_auto_refresh_minutes

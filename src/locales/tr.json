@@ -1606,6 +1606,7 @@
     "installFailed": "Sistem kurulumu başarısız oldu. Daha sonra yeniden deneyin veya paketi manuel indirin.",
     "restartRequiredAfterInstall": "Güncelleme yüklendi. Geçişi tamamlamak için uygulamayı manuel olarak yeniden başlatın.",
     "stoppingApiService": "API hizmeti durduruluyor...",
+    "stopApiServiceFailed": "API hizmeti durdurulamadı. Önce devre dışı bırakıp tekrar deneyin.",
     "skipThisVersion": "Bu sürümü atla",
     "skipFailed": "Bu güncelleme atlanamadı: {{error}}"
   },
@@ -1723,12 +1724,18 @@
       "addressKind": "Adres türü",
       "addressLocal": "Yerel",
       "addressLan": "Yerel ağ",
+      "accessScopeLabel": "Erişim kapsamı",
+      "accessScopeLocalhost": "Yalnızca yerel",
+      "accessScopeLan": "Yerel ağ",
+      "accessScopeLocalhostShort": "Yalnızca yerel",
+      "accessScopeLanShort": "Yerel+ağ",
+      "accessScopeSaveSuccess": "API hizmeti erişim kapsamı güncellendi",
       "apiKey": "Anahtar",
       "statusRunning": "Çalışıyor",
       "statusStopped": "Durduruldu",
       "statusDisabled": "Devre dışı",
       "emptyMembers": "Koleksiyonda henüz hesap yok",
-      "footerHint": "Yerel ve LAN üzerinde dinler",
+      "footerHint": "Erişim kapsamı: {{scope}}",
       "manageAccounts": "Hesapları yönet",
       "rotateKey": "Anahtarı yenile",
       "rotateConfirmMessage": "Sıfırlamadan sonra mevcut API hizmeti anahtarı hemen geçersiz olur ve devam eden istekler kullanılamaz hale gelebilir. Devam edilsin mi?",
@@ -1760,10 +1767,29 @@
         "manageMembers": "Üyeleri yönet"
       },
       "entryAction": "API hizmetine ekle",
-      "testAction": "API hizmetini test et",
-      "testSuccess": "API hizmeti testi başarılı ({{count}} model)",
-      "testTimeout": "Test zaman aşımına uğradı. Yerel hizmetin çalıştığını doğrulayın.",
+      "testAction": "Dene",
+      "testDialogTitle": "API hizmetini test et",
+      "testDialogDesc": "Yerel hizmeti, anahtarı ve upstream yanıtını doğrulamak için Codex CLI üzerinden gerçek bir istek gönderir.",
+      "testProgressTitle": "Hizmet test ediliyor",
+      "testProgressDesc": "Yerel API hizmetine gerçek istek gönderiliyor. Lütfen bekleyin.",
+      "testOutputTitle": "Döndürülen sonuç",
+      "testResultTitle": "Hizmet denetimi sonucu",
+      "testSuccess": "Hizmet denetimi başarılı: yerel hizmet, anahtar ve upstream yanıtı sağlıklı ({{model}}, {{latency}}). Codex hâlâ 502 döndürüyorsa Codex Base URL, API Key veya çalışma ortamını kontrol edin.",
+      "testFailureStage": "Tanı aşaması",
+      "testFailureCause": "Hata nedeni",
+      "testFailureSuggestion": "Önerilen çözüm",
+      "testFailureStatus": "HTTP durumu",
+      "testFailureModel": "Test modeli",
+      "testFailureDetail": "Tanı ayrıntıları",
+      "testFailureCliOutput": "CLI çıktısı",
+      "testFailureGatewayOutput": "Ağ geçidi yanıtı",
+      "testTimeout": "Gerçek istek denetimi zaman aşımına uğradı. Yerel hizmeti, proxy’yi veya upstream ağı kontrol edin.",
       "testUnavailable": "Mevcut API hizmeti URL’si kullanılamıyor",
+      "testConnectFailed": "{{url}} adresine bağlanılamıyor. API hizmetinin çalıştığını, portun değişmediğini ve engellenmediğini doğrulayın.",
+      "testAuthFailed": "Hizmete erişiliyor ancak kimlik doğrulama başarısız: {{detail}}. API hizmeti anahtarını veya hesap oturum durumunu kontrol edin.",
+      "testServiceUnavailable": "Hizmete erişiliyor ancak şu anda kullanılamıyor: {{detail}}. Hizmetin etkin olup olmadığını, hesap koleksiyonunun boş olup olmadığını veya hesapların kullanılabilirliğini kontrol edin.",
+      "testRateLimited": "Hizmete erişiliyor ancak upstream hız sınırında veya kota tükendi: {{detail}}.",
+      "testHttpFailed": "Hizmete erişiliyor ancak istek HTTP {{status}} döndürdü: {{detail}}.",
       "activateAction": "API hizmetini başlat",
       "activateSuccess": "API hizmetine geçildi",
       "dashboardAction": "Hizmet paneli",
@@ -1778,8 +1804,8 @@
       "statsTitle": "Toplam",
       "accountStatsTitle": "Hesaba göre",
       "statsEmpty": "Henüz istatistik yok",
-      "summaryMeta": "{{count}} hesap · Yerel/LAN",
-      "summaryMetaUnconfigured": "Yapılandırılmadı · Yerel/LAN",
+      "summaryMeta": "{{count}} hesap · {{scope}}",
+      "summaryMetaUnconfigured": "Yapılandırılmadı · {{scope}}",
       "memberTitle": "Koleksiyon üyeleri",
       "stats": {
         "requests": "İstekler",
@@ -1858,6 +1884,10 @@
         "viewFull": "Tam istatistikleri gör",
         "modalTitle": "API hizmeti kota havuzu",
         "empty": "Henüz kota istatistiği yok"
+      },
+      "oauthBinding": {
+        "desc": "API hizmetine geçerken veya hizmeti test ederken oturum durumu bağlı OAuth hesabını kullanır, Provider ise mevcut API hizmeti yapılandırmasını kullanır.",
+        "currentService": "API hizmeti: {{name}}"
       }
     },
     "local": {
@@ -2262,6 +2292,21 @@
         "cockpit_api": {
           "name": "Cockpit Api"
         }
+      },
+      "oauthBinding": {
+        "label": "OAuth Bağı",
+        "unbound": "Bağlı değil",
+        "action": "OAuth Bağla",
+        "actionShort": "Bağla",
+        "title": "OAuth Hesabı Bağla",
+        "desc": "Bu API Key hesabına geçerken oturum durumu bağlı OAuth hesabını kullanır; Provider bu API Key hesabının yapılandırmasını kullanır.",
+        "currentAccount": "API Key hesabı: {{name}}",
+        "selectLabel": "OAuth hesabı seç",
+        "empty": "Henüz OAuth hesabı yok. Önce OAuth yetkili bir hesap ekleyin.",
+        "validationRequired": "Bir OAuth hesabı seçin",
+        "saveSuccess": "OAuth bağı güncellendi",
+        "saveFailed": "OAuth bağı kurulamadı: {{error}}",
+        "switchRequiresBinding": "Önce bir OAuth hesabı bağlayın"
       }
     },
     "modelProviders": {
@@ -2662,7 +2707,9 @@
     "cursorRefreshInterval": "Kota otomatik yenileme",
     "gemini": {
       "title": "Gemini Cli Ayarları",
-      "appPath": "Gemini Cli Yolu"
+      "appPath": "Gemini Cli Yolu",
+      "syncWsl": "WSL Yapılandırmasını Eşitle",
+      "syncWslDesc": "Hesap değiştirirken WSL içindeki .gemini yapılandırmasını otomatik olarak üzerine yaz"
     },
     "geminiRefreshInterval": "Kota Otomatik Yenileme",
     "codebuddy": {

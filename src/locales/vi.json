@@ -1606,6 +1606,7 @@
     "installFailed": "Cài đặt hệ thống thất bại. Hãy thử lại sau hoặc tải gói về thủ công.",
     "restartRequiredAfterInstall": "Bản cập nhật đã được cài. Hãy khởi động lại ứng dụng thủ công để hoàn tất chuyển đổi.",
     "stoppingApiService": "Đang dừng dịch vụ API...",
+    "stopApiServiceFailed": "Không thể dừng dịch vụ API. Hãy tắt dịch vụ trước rồi thử lại.",
     "skipThisVersion": "Bỏ qua phiên bản này",
     "skipFailed": "Không thể bỏ qua bản cập nhật này: {{error}}"
   },
@@ -1723,12 +1724,18 @@
       "addressKind": "Loại địa chỉ",
       "addressLocal": "Cục bộ",
       "addressLan": "Mạng cục bộ",
+      "accessScopeLabel": "Phạm vi truy cập",
+      "accessScopeLocalhost": "Chỉ cục bộ",
+      "accessScopeLan": "Mạng nội bộ",
+      "accessScopeLocalhostShort": "Chỉ cục bộ",
+      "accessScopeLanShort": "Cục bộ+mạng",
+      "accessScopeSaveSuccess": "Đã cập nhật phạm vi truy cập dịch vụ API",
       "apiKey": "Khóa",
       "statusRunning": "Đang chạy",
       "statusStopped": "Đã dừng",
       "statusDisabled": "Đã tắt",
       "emptyMembers": "Hiện chưa có tài khoản trong bộ sưu tập",
-      "footerHint": "Lắng nghe trên máy cục bộ và LAN",
+      "footerHint": "Phạm vi truy cập: {{scope}}",
       "manageAccounts": "Quản lý tài khoản",
       "rotateKey": "Đổi khóa",
       "rotateConfirmMessage": "Sau khi đặt lại, khóa dịch vụ API hiện tại sẽ mất hiệu lực ngay và các yêu cầu đang chạy có thể không dùng được nữa. Tiếp tục chứ?",
@@ -1760,10 +1767,29 @@
         "manageMembers": "Quản lý thành viên"
       },
       "entryAction": "Thêm vào dịch vụ API",
-      "testAction": "Kiểm tra dịch vụ API",
-      "testSuccess": "Kiểm tra dịch vụ API thành công ({{count}} mô hình)",
-      "testTimeout": "Kiểm tra đã hết thời gian. Hãy xác nhận dịch vụ cục bộ đang chạy.",
+      "testAction": "Kiểm tra",
+      "testDialogTitle": "Kiểm tra dịch vụ API",
+      "testDialogDesc": "Gửi một yêu cầu thực qua Codex CLI để kiểm tra dịch vụ cục bộ, khóa và phản hồi upstream.",
+      "testProgressTitle": "Đang kiểm tra dịch vụ",
+      "testProgressDesc": "Đang gửi yêu cầu thực tới dịch vụ API cục bộ. Vui lòng chờ.",
+      "testOutputTitle": "Kết quả trả về",
+      "testResultTitle": "Kết quả kiểm tra dịch vụ",
+      "testSuccess": "Kiểm tra dịch vụ thành công: dịch vụ cục bộ, khóa và phản hồi upstream đều bình thường ({{model}}, {{latency}}). Nếu Codex vẫn trả 502, hãy kiểm tra Base URL, API Key hoặc môi trường chạy của Codex.",
+      "testFailureStage": "Giai đoạn xác định",
+      "testFailureCause": "Nguyên nhân lỗi",
+      "testFailureSuggestion": "Cách xử lý đề xuất",
+      "testFailureStatus": "Trạng thái HTTP",
+      "testFailureModel": "Mô hình kiểm tra",
+      "testFailureDetail": "Chi tiết chẩn đoán",
+      "testFailureCliOutput": "Đầu ra CLI",
+      "testFailureGatewayOutput": "Phản hồi gateway",
+      "testTimeout": "Kiểm tra bằng yêu cầu thật đã hết thời gian. Hãy kiểm tra dịch vụ cục bộ, proxy hoặc mạng upstream.",
       "testUnavailable": "URL dịch vụ API hiện tại không khả dụng",
+      "testConnectFailed": "Không thể kết nối tới {{url}}. Hãy xác nhận dịch vụ API đang chạy, cổng chưa bị đổi và không bị chặn.",
+      "testAuthFailed": "Dịch vụ truy cập được nhưng xác thực thất bại: {{detail}}. Hãy kiểm tra khóa dịch vụ API hoặc trạng thái đăng nhập tài khoản.",
+      "testServiceUnavailable": "Dịch vụ truy cập được nhưng hiện không khả dụng: {{detail}}. Hãy kiểm tra dịch vụ đã bật chưa, bộ sưu tập tài khoản có trống không hoặc tài khoản có dùng được không.",
+      "testRateLimited": "Dịch vụ truy cập được nhưng upstream bị giới hạn hoặc hết hạn mức: {{detail}}.",
+      "testHttpFailed": "Dịch vụ truy cập được nhưng yêu cầu trả về HTTP {{status}}: {{detail}}.",
       "activateAction": "Khởi động dịch vụ API",
       "activateSuccess": "Đã chuyển sang dịch vụ API",
       "dashboardAction": "Bảng dịch vụ",
@@ -1778,8 +1804,8 @@
       "statsTitle": "Tổng quan",
       "accountStatsTitle": "Theo tài khoản",
       "statsEmpty": "Chưa có thống kê",
-      "summaryMeta": "{{count}} tài khoản · Cục bộ/LAN",
-      "summaryMetaUnconfigured": "Chưa cấu hình · Cục bộ/LAN",
+      "summaryMeta": "{{count}} tài khoản · {{scope}}",
+      "summaryMetaUnconfigured": "Chưa cấu hình · {{scope}}",
       "memberTitle": "Thành viên bộ sưu tập",
       "stats": {
         "requests": "Yêu cầu",
@@ -1858,6 +1884,10 @@
         "viewFull": "Xem thống kê đầy đủ",
         "modalTitle": "Nhóm hạn mức dịch vụ API",
         "empty": "Chưa có thống kê hạn mức"
+      },
+      "oauthBinding": {
+        "desc": "Khi chuyển sang hoặc kiểm tra dịch vụ API, trạng thái đăng nhập dùng tài khoản OAuth đã liên kết, còn Provider dùng cấu hình dịch vụ API hiện tại.",
+        "currentService": "Dịch vụ API: {{name}}"
       }
     },
     "local": {
@@ -2262,6 +2292,21 @@
         "cockpit_api": {
           "name": "Cockpit Api"
         }
+      },
+      "oauthBinding": {
+        "label": "Liên kết OAuth",
+        "unbound": "Chưa liên kết",
+        "action": "Liên kết OAuth",
+        "actionShort": "Liên kết",
+        "title": "Liên kết tài khoản OAuth",
+        "desc": "Khi chuyển sang tài khoản API Key này, trạng thái đăng nhập dùng tài khoản OAuth đã liên kết, còn Provider dùng cấu hình của tài khoản API Key này.",
+        "currentAccount": "Tài khoản API Key: {{name}}",
+        "selectLabel": "Chọn tài khoản OAuth",
+        "empty": "Chưa có tài khoản OAuth. Hãy thêm tài khoản ủy quyền OAuth trước.",
+        "validationRequired": "Vui lòng chọn tài khoản OAuth",
+        "saveSuccess": "Đã cập nhật liên kết OAuth",
+        "saveFailed": "Liên kết OAuth thất bại: {{error}}",
+        "switchRequiresBinding": "Hãy liên kết tài khoản OAuth trước"
       }
     },
     "modelProviders": {
@@ -2662,7 +2707,9 @@
     "cursorRefreshInterval": "Tự động làm mới hạn mức",
     "gemini": {
       "title": "Cài đặt Gemini Cli",
-      "appPath": "Đường dẫn Gemini Cli"
+      "appPath": "Đường dẫn Gemini Cli",
+      "syncWsl": "Đồng bộ cấu hình WSL",
+      "syncWslDesc": "Tự động ghi đè cấu hình .gemini trong WSL khi chuyển tài khoản"
     },
     "geminiRefreshInterval": "Tự động làm mới hạn ngạch",
     "codebuddy": {

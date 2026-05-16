@@ -7,6 +7,50 @@ All notable changes to Cockpit Tools will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
+## [0.23.7] - 2026-05-16
+
+### Added
+- **Gemini account switching on Windows can now sync default credentials into WSL**: when switching the default Gemini account, Cockpit can copy `oauth_creds.json` and `google_accounts.json` into WSL `~/.gemini` and clean stale `gemini-credentials.json`.
+- **Modal keyboard/back interactions were expanded across account and tool dialogs**: major dialogs now support `Esc` close and explicit back actions to improve keyboard and layered-modal workflows.
+
+### Changed
+- **Gemini WSL sync now has a user-facing toggle in both Settings and Quick Settings**: the new `Sync WSL Configuration` option is enabled by default and controls whether switch-time credential sync is applied.
+- **Codex OAuth-binding account picker now uses the same subscription badge style as the main account view**: plan badges in the binding modal follow the same visual classes and plan color semantics as Codex account cards/tables.
+- **Homebrew Cask metadata has been updated after v0.23.6**: cask version/checksum references were refreshed to match the latest packaged artifact state.
+
+### Fixed
+- **GitHub Copilot switching/import now supports VS Code shared storage on Windows**: account import and token injection now read/write both legacy `User/globalStorage/state.vscdb` and shared `.vscode-shared*/sharedStorage/state.vscdb`, with shared-storage-first lookup and legacy fallback for mixed installs.
+
+---
+## [0.23.6] - 2026-05-16
+
+### Added
+- **Codex API Key accounts and the Local API Service can now bind an OAuth account**: API-key based Codex usage keeps the selected OAuth account as the login identity while the API Key account or Local API Service provides the runtime provider.
+- **Codex OAuth binding now has a searchable account picker**: the binding dialog supports search, plan/status filters, tag filters, sorting, pagination, and compact single-select rows for faster account lookup.
+
+### Changed
+- **Codex Local API Service now requires an OAuth binding before launch/test calls**: service activation and health checks use the bound OAuth login state together with the Local API Service provider settings.
+- **Codex account overview now shows OAuth binding inline for API Key and Local API Service entries**: binding status is visible from the account card, and the Local API Service preview keeps two member accounts visible.
+- **Codex OAuth binding dialog has been redesigned**: the dialog uses a more compact layout, an internal account-list scroll area, and a layered blue/teal visual treatment so the save action remains visible.
+
+---
+## [0.23.5] - 2026-05-16
+
+### Added
+- **Codex Local API Service now has a real CLI health check with actionable diagnostics**: the API Service dialog can send a real Codex CLI request through the local gateway, then show the tested model, latency, returned output, and the exact failure stage when something breaks.
+- **Codex Local API Service access scope is now configurable**: new API Service collections start as local-only, and users can explicitly switch the listener between Local Only and LAN access from the service dialog.
+
+### Changed
+- **Codex Local API Service status now describes what users can actually access**: the account card and API Service dialog show the selected access scope instead of a fixed Local/LAN label.
+- **Codex external imports now preserve API endpoint settings for Cockpit API accounts**: supported import links can carry an API Base URL so imported Codex API-key accounts are ready to use with the expected provider settings.
+- **Antigravity floating cards now show more quota context**: Antigravity account popovers can display up to three quota items instead of two.
+
+### Fixed
+- **Codex Local API Service now releases its port before applying app updates**: update restarts stop the in-process gateway before installing or relaunching, wait for the original port to become bindable, and show an in-dialog error if the service cannot be stopped.
+- **Codex account switching now keeps local sessions visible after provider changes**: switching between normal Codex accounts and API Service mode repairs affected local history visibility when the underlying provider changes.
+- **Kiro account imports no longer merge distinct accounts that only share an AWS profile ARN**: account matching now ignores ARN values as user IDs and deduplicates by real user identity, email, or refresh token.
+
+---
 ## [0.23.4] - 2026-05-14
 
 ### Added

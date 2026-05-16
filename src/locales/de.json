@@ -1606,6 +1606,7 @@
     "installFailed": "Die Systeminstallation ist fehlgeschlagen. Versuchen Sie es später erneut oder laden Sie das Paket manuell herunter.",
     "restartRequiredAfterInstall": "Das Update ist installiert. Starten Sie die App manuell neu, um den Wechsel abzuschließen.",
     "stoppingApiService": "API-Dienst wird gestoppt...",
+    "stopApiServiceFailed": "Der API-Dienst konnte nicht beendet werden. Deaktivieren Sie ihn zuerst und versuchen Sie es erneut.",
     "skipThisVersion": "Diese Version überspringen",
     "skipFailed": "Dieses Update konnte nicht übersprungen werden: {{error}}"
   },
@@ -1723,12 +1724,18 @@
       "addressKind": "Adresstyp",
       "addressLocal": "Lokal",
       "addressLan": "Heimnetz",
+      "accessScopeLabel": "Zugriffsumfang",
+      "accessScopeLocalhost": "Nur lokal",
+      "accessScopeLan": "Heimnetz",
+      "accessScopeLocalhostShort": "Nur lokal",
+      "accessScopeLanShort": "Lokal+Netz",
+      "accessScopeSaveSuccess": "Zugriffsumfang des API-Diensts aktualisiert",
       "apiKey": "Schlüssel",
       "statusRunning": "Aktiv",
       "statusStopped": "Gestoppt",
       "statusDisabled": "Deaktiviert",
       "emptyMembers": "Diese Sammlung enthält noch keine Konten",
-      "footerHint": "Hört lokal und im LAN",
+      "footerHint": "Zugriff: {{scope}}",
       "manageAccounts": "Konten verwalten",
       "rotateKey": "Schlüssel erneuern",
       "rotateConfirmMessage": "Nach dem Zurücksetzen wird der aktuelle API-Service-Schlüssel sofort ungültig. Laufende Anfragen könnten dadurch nicht mehr verfügbar sein. Fortfahren?",
@@ -1760,10 +1767,29 @@
         "manageMembers": "Mitglieder verwalten"
       },
       "entryAction": "Zum API-Dienst hinzufügen",
-      "testAction": "API-Dienst testen",
-      "testSuccess": "API-Dienst-Test erfolgreich ({{count}} Modelle)",
-      "testTimeout": "Zeitüberschreitung beim Test. Prüfen Sie, ob der lokale Dienst läuft.",
+      "testAction": "Prüfen",
+      "testDialogTitle": "API-Dienst testen",
+      "testDialogDesc": "Sendet eine echte Anfrage über Codex CLI, um lokalen Dienst, Schlüssel und Upstream-Antwort zu prüfen.",
+      "testProgressTitle": "Dienst wird getestet",
+      "testProgressDesc": "Es wird eine echte Anfrage an den lokalen API-Dienst gesendet. Bitte warten.",
+      "testOutputTitle": "Zurückgegebene Antwort",
+      "testResultTitle": "Ergebnis der Dienstprüfung",
+      "testSuccess": "Dienstprüfung erfolgreich: lokaler Dienst, Schlüssel und Upstream-Antwort sind in Ordnung ({{model}}, {{latency}}). Falls Codex weiter 502 meldet, prüfen Sie Base URL, API Key oder die Laufzeitumgebung von Codex.",
+      "testFailureStage": "Prüfschritt",
+      "testFailureCause": "Fehlerursache",
+      "testFailureSuggestion": "Empfohlene Behebung",
+      "testFailureStatus": "HTTP-Status",
+      "testFailureModel": "Testmodell",
+      "testFailureDetail": "Diagnosedetails",
+      "testFailureCliOutput": "CLI-Ausgabe",
+      "testFailureGatewayOutput": "Gateway-Antwort",
+      "testTimeout": "Zeitüberschreitung bei der echten Anfrageprüfung. Prüfen Sie lokalen Dienst, Proxy oder Upstream-Netzwerk.",
       "testUnavailable": "Die aktuelle API-Dienst-URL ist nicht erreichbar",
+      "testConnectFailed": "Keine Verbindung zu {{url}}. Prüfen Sie, ob der API-Dienst läuft, der Port unverändert ist und nichts blockiert.",
+      "testAuthFailed": "Dienst erreichbar, aber Authentifizierung fehlgeschlagen: {{detail}}. Prüfen Sie API-Dienstschlüssel oder Kontoanmeldung.",
+      "testServiceUnavailable": "Dienst erreichbar, aber derzeit nicht verfügbar: {{detail}}. Prüfen Sie, ob der Dienst aktiv ist, die Kontosammlung leer ist oder Konten nutzbar sind.",
+      "testRateLimited": "Dienst erreichbar, aber Upstream ist limitiert oder das Kontingent ist erschöpft: {{detail}}.",
+      "testHttpFailed": "Dienst erreichbar, aber die Anfrage gab HTTP {{status}} zurück: {{detail}}.",
       "activateAction": "API-Dienst starten",
       "activateSuccess": "Zum API-Dienst gewechselt",
       "dashboardAction": "Service-Panel",
@@ -1778,8 +1804,8 @@
       "statsTitle": "Gesamt",
       "accountStatsTitle": "Nach Konto",
       "statsEmpty": "Noch keine Statistiken",
-      "summaryMeta": "{{count}} Konten · Lokal/LAN",
-      "summaryMetaUnconfigured": "Nicht konfiguriert · Lokal/LAN",
+      "summaryMeta": "{{count}} Konten · {{scope}}",
+      "summaryMetaUnconfigured": "Nicht konfiguriert · {{scope}}",
       "memberTitle": "Sammlungsmitglieder",
       "stats": {
         "requests": "Anfragen",
@@ -1858,6 +1884,10 @@
         "viewFull": "Vollständige Statistik anzeigen",
         "modalTitle": "Kontingentpool des API-Dienstes",
         "empty": "Noch keine Kontingentstatistik"
+      },
+      "oauthBinding": {
+        "desc": "Beim Wechsel zur API-Dienst-Konfiguration oder beim Testen verwendet der Anmeldestatus das gebundene OAuth-Konto, während der Provider die aktuelle API-Dienst-Konfiguration nutzt.",
+        "currentService": "API-Dienst: {{name}}"
       }
     },
     "local": {
@@ -2262,6 +2292,21 @@
         "cockpit_api": {
           "name": "Cockpit Api"
         }
+      },
+      "oauthBinding": {
+        "label": "OAuth-Bindung",
+        "unbound": "Nicht gebunden",
+        "action": "OAuth binden",
+        "actionShort": "Binden",
+        "title": "OAuth-Konto binden",
+        "desc": "Beim Wechsel zu diesem API-Key-Konto nutzt die Anmeldung das gebundene OAuth-Konto; der Provider nutzt die Konfiguration dieses API-Key-Kontos.",
+        "currentAccount": "API-Key-Konto: {{name}}",
+        "selectLabel": "OAuth-Konto wählen",
+        "empty": "Noch kein OAuth-Konto vorhanden. Bitte zuerst ein OAuth-Konto hinzufügen.",
+        "validationRequired": "Bitte ein OAuth-Konto wählen",
+        "saveSuccess": "OAuth-Bindung aktualisiert",
+        "saveFailed": "OAuth-Bindung fehlgeschlagen: {{error}}",
+        "switchRequiresBinding": "Bitte zuerst ein OAuth-Konto binden"
       }
     },
     "modelProviders": {
@@ -2662,7 +2707,9 @@
     "cursorRefreshInterval": "Kontingent automatisch aktualisieren",
     "gemini": {
       "title": "Gemini Cli-Einstellungen",
-      "appPath": "Gemini Cli-Pfad"
+      "appPath": "Gemini Cli-Pfad",
+      "syncWsl": "WSL-Konfiguration synchronisieren",
+      "syncWslDesc": "Beim Kontowechsel die .gemini-Konfiguration in WSL automatisch überschreiben"
     },
     "geminiRefreshInterval": "Kontingent automatisch aktualisieren",
     "codebuddy": {

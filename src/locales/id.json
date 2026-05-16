@@ -1655,7 +1655,8 @@
     "authorizing": "Menunggu otorisasi sistem...",
     "installFailed": "Instalasi sistem gagal. Coba lagi nanti atau unduh secara manual.",
     "restartRequiredAfterInstall": "Pembaruan terpasang. Mulai ulang aplikasi secara manual untuk menyelesaikan peralihan.",
-    "stoppingApiService": "Menghentikan layanan API..."
+    "stoppingApiService": "Menghentikan layanan API...",
+    "stopApiServiceFailed": "Layanan API tidak dapat dihentikan. Nonaktifkan dulu, lalu coba lagi."
   },
   "closeDialog": {
     "title": "Tutup Jendela",
@@ -1774,12 +1775,18 @@
       "addressKind": "Jenis alamat",
       "addressLocal": "Lokal",
       "addressLan": "Jaringan lokal",
+      "accessScopeLabel": "Cakupan akses",
+      "accessScopeLocalhost": "Lokal saja",
+      "accessScopeLan": "Jaringan lokal",
+      "accessScopeLocalhostShort": "Lokal saja",
+      "accessScopeLanShort": "Lokal+jaringan",
+      "accessScopeSaveSuccess": "Cakupan akses layanan API diperbarui",
       "apiKey": "Kunci",
       "statusRunning": "Berjalan",
       "statusStopped": "Berhenti",
       "statusDisabled": "Dinonaktifkan",
       "emptyMembers": "Belum ada akun di koleksi ini",
-      "footerHint": "Mendengarkan lokal dan LAN",
+      "footerHint": "Cakupan akses: {{scope}}",
       "manageAccounts": "Kelola akun",
       "rotateKey": "Putar kunci",
       "rotateConfirmMessage": "Setelah direset, kunci layanan API saat ini akan langsung tidak berlaku, dan permintaan yang sedang berjalan mungkin menjadi tidak tersedia. Lanjutkan?",
@@ -1811,10 +1818,29 @@
         "manageMembers": "Kelola anggota"
       },
       "entryAction": "Tambahkan ke Layanan API",
-      "testAction": "Uji Layanan API",
-      "testSuccess": "Pengujian layanan API berhasil ({{count}} model)",
-      "testTimeout": "Pengujian habis waktu. Pastikan layanan lokal sedang berjalan.",
+      "testAction": "Tes",
+      "testDialogTitle": "Uji Layanan API",
+      "testDialogDesc": "Kirim satu permintaan nyata lewat Codex CLI untuk memeriksa layanan lokal, kunci, dan respons upstream.",
+      "testProgressTitle": "Menguji layanan",
+      "testProgressDesc": "Sedang mengirim permintaan nyata ke layanan API lokal. Tunggu sebentar.",
+      "testOutputTitle": "Hasil yang dikembalikan",
+      "testResultTitle": "Hasil pemeriksaan layanan",
+      "testSuccess": "Pemeriksaan layanan berhasil: layanan lokal, kunci, dan respons upstream sehat ({{model}}, {{latency}}). Jika Codex masih mengembalikan 502, periksa Base URL, API Key, atau lingkungan runtime Codex.",
+      "testFailureStage": "Tahap diagnosis",
+      "testFailureCause": "Penyebab gagal",
+      "testFailureSuggestion": "Saran perbaikan",
+      "testFailureStatus": "Status HTTP",
+      "testFailureModel": "Model uji",
+      "testFailureDetail": "Detail diagnosis",
+      "testFailureCliOutput": "Output CLI",
+      "testFailureGatewayOutput": "Respons gateway",
+      "testTimeout": "Pemeriksaan dengan permintaan nyata kehabisan waktu. Periksa layanan lokal, proxy, atau jaringan upstream.",
       "testUnavailable": "URL layanan API saat ini tidak tersedia",
+      "testConnectFailed": "Tidak dapat terhubung ke {{url}}. Pastikan layanan API berjalan, port tidak berubah, dan tidak ada yang memblokirnya.",
+      "testAuthFailed": "Layanan dapat dijangkau, tetapi autentikasi gagal: {{detail}}. Periksa kunci layanan API atau status masuk akun.",
+      "testServiceUnavailable": "Layanan dapat dijangkau, tetapi saat ini tidak tersedia: {{detail}}. Periksa apakah layanan aktif, koleksi akun kosong, atau akun dapat digunakan.",
+      "testRateLimited": "Layanan dapat dijangkau, tetapi upstream dibatasi atau kuota habis: {{detail}}.",
+      "testHttpFailed": "Layanan dapat dijangkau, tetapi permintaan mengembalikan HTTP {{status}}: {{detail}}.",
       "activateAction": "Mulai Layanan API",
       "activateSuccess": "Beralih ke layanan API",
       "dashboardAction": "Panel layanan",
@@ -1829,8 +1855,8 @@
       "statsTitle": "Total",
       "accountStatsTitle": "Per akun",
       "statsEmpty": "Belum ada statistik",
-      "summaryMeta": "{{count}} akun · Lokal/LAN",
-      "summaryMetaUnconfigured": "Belum dikonfigurasi · Lokal/LAN",
+      "summaryMeta": "{{count}} akun · {{scope}}",
+      "summaryMetaUnconfigured": "Belum dikonfigurasi · {{scope}}",
       "memberTitle": "Anggota koleksi",
       "stats": {
         "requests": "Permintaan",
@@ -1909,6 +1935,10 @@
         "viewFull": "Lihat statistik lengkap",
         "modalTitle": "Kumpulan kuota layanan API",
         "empty": "Belum ada statistik kuota"
+      },
+      "oauthBinding": {
+        "desc": "Saat beralih ke layanan API atau mengujinya, status login memakai akun OAuth yang terikat, sementara Provider memakai konfigurasi layanan API saat ini.",
+        "currentService": "Layanan API: {{name}}"
       }
     },
     "api": {
@@ -2000,6 +2030,21 @@
         "cockpit_api": {
           "name": "Cockpit Api"
         }
+      },
+      "oauthBinding": {
+        "label": "Tautan OAuth",
+        "unbound": "Belum tertaut",
+        "action": "Tautkan OAuth",
+        "actionShort": "Tautkan",
+        "title": "Tautkan Akun OAuth",
+        "desc": "Saat beralih ke akun API Key ini, status login memakai akun OAuth tertaut, sementara Provider memakai konfigurasi akun API Key ini.",
+        "currentAccount": "Akun API Key: {{name}}",
+        "selectLabel": "Pilih akun OAuth",
+        "empty": "Belum ada akun OAuth. Tambahkan akun berotorisasi OAuth terlebih dahulu.",
+        "validationRequired": "Pilih akun OAuth",
+        "saveSuccess": "Tautan OAuth diperbarui",
+        "saveFailed": "Gagal menautkan OAuth: {{error}}",
+        "switchRequiresBinding": "Tautkan akun OAuth terlebih dahulu"
       }
     },
     "local": {
@@ -2814,7 +2859,9 @@
     },
     "gemini": {
       "title": "Gemini Cli Settings",
-      "appPath": "Gemini Cli Path"
+      "appPath": "Gemini Cli Path",
+      "syncWsl": "Sinkronkan Konfigurasi WSL",
+      "syncWslDesc": "Otomatis menimpa konfigurasi .gemini di WSL saat mengganti akun"
     },
     "geminiRefreshInterval": "Quota Auto Refresh",
     "error": {

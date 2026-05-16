@@ -1606,6 +1606,7 @@
     "installFailed": "A instalação do sistema falhou. Tente novamente mais tarde ou baixe o pacote manualmente.",
     "restartRequiredAfterInstall": "A atualização foi instalada. Reinicie o app manualmente para concluir a troca.",
     "stoppingApiService": "Parando serviço de API...",
+    "stopApiServiceFailed": "Não foi possível parar o serviço de API. Desative-o primeiro e tente novamente.",
     "skipThisVersion": "Ignorar esta versão",
     "skipFailed": "Não foi possível ignorar esta atualização: {{error}}"
   },
@@ -1723,12 +1724,18 @@
       "addressKind": "Tipo de endereço",
       "addressLocal": "Disp.",
       "addressLan": "Rede local",
+      "accessScopeLabel": "Escopo de acesso",
+      "accessScopeLocalhost": "Somente local",
+      "accessScopeLan": "Rede local",
+      "accessScopeLocalhostShort": "Somente local",
+      "accessScopeLanShort": "Local+rede",
+      "accessScopeSaveSuccess": "Escopo de acesso do serviço API atualizado",
       "apiKey": "Chave",
       "statusRunning": "Em execução",
       "statusStopped": "Parado",
       "statusDisabled": "Desativado",
       "emptyMembers": "Não há contas na coleção",
-      "footerHint": "Escuta localmente e na LAN",
+      "footerHint": "Escopo de acesso: {{scope}}",
       "manageAccounts": "Gerenciar contas",
       "rotateKey": "Girar chave",
       "rotateConfirmMessage": "Após a redefinição, a chave atual do serviço de API deixará de funcionar imediatamente, e as solicitações em andamento podem ficar indisponíveis. Continuar?",
@@ -1760,10 +1767,29 @@
         "manageMembers": "Gerenciar membros"
       },
       "entryAction": "Adicionar ao serviço de API",
-      "testAction": "Testar serviço de API",
-      "testSuccess": "Teste do serviço de API concluído com sucesso ({{count}} modelos)",
-      "testTimeout": "O teste expirou. Confirme se o serviço local está em execução.",
+      "testAction": "Testar",
+      "testDialogTitle": "Testar serviço API",
+      "testDialogDesc": "Envia uma solicitação real pelo Codex CLI para verificar o serviço local, a chave e a resposta upstream.",
+      "testProgressTitle": "Testando serviço",
+      "testProgressDesc": "Enviando uma solicitação real ao serviço API local. Aguarde.",
+      "testOutputTitle": "Resultado retornado",
+      "testResultTitle": "Resultado da verificação do serviço",
+      "testSuccess": "Verificação concluída: serviço local, chave e resposta upstream estão normais ({{model}}, {{latency}}). Se o Codex ainda retornar 502, verifique a Base URL, a API Key ou o ambiente de execução do Codex.",
+      "testFailureStage": "Etapa localizada",
+      "testFailureCause": "Motivo da falha",
+      "testFailureSuggestion": "Correção sugerida",
+      "testFailureStatus": "Status HTTP",
+      "testFailureModel": "Modelo testado",
+      "testFailureDetail": "Detalhes do diagnóstico",
+      "testFailureCliOutput": "Saída da CLI",
+      "testFailureGatewayOutput": "Resposta do gateway",
+      "testTimeout": "A verificação com requisição real expirou. Verifique o serviço local, o proxy ou a rede upstream.",
       "testUnavailable": "A URL atual do serviço de API não está disponível",
+      "testConnectFailed": "Não foi possível conectar a {{url}}. Confirme se o serviço de API está em execução, se a porta não mudou e se nada está bloqueando.",
+      "testAuthFailed": "O serviço está acessível, mas a autenticação falhou: {{detail}}. Verifique a chave do serviço de API ou o estado de login da conta.",
+      "testServiceUnavailable": "O serviço está acessível, mas indisponível no momento: {{detail}}. Verifique se o serviço está ativado, se a coleção de contas está vazia ou se as contas podem ser usadas.",
+      "testRateLimited": "O serviço está acessível, mas o upstream está limitado ou a cota acabou: {{detail}}.",
+      "testHttpFailed": "O serviço está acessível, mas a requisição retornou HTTP {{status}}: {{detail}}.",
       "activateAction": "Iniciar serviço de API",
       "activateSuccess": "Alternado para o serviço de API",
       "dashboardAction": "Painel do serviço",
@@ -1778,8 +1804,8 @@
       "statsTitle": "Totais",
       "accountStatsTitle": "Por conta",
       "statsEmpty": "Ainda não há estatísticas",
-      "summaryMeta": "{{count}} contas · Local/LAN",
-      "summaryMetaUnconfigured": "Não configurado · Local/LAN",
+      "summaryMeta": "{{count}} contas · {{scope}}",
+      "summaryMetaUnconfigured": "Não configurado · {{scope}}",
       "memberTitle": "Membros da coleção",
       "stats": {
         "requests": "Requisições",
@@ -1858,6 +1884,10 @@
         "viewFull": "Ver estatísticas completas",
         "modalTitle": "Pool de cota do serviço API",
         "empty": "Ainda sem estatísticas de cota"
+      },
+      "oauthBinding": {
+        "desc": "Ao alternar para o serviço de API ou testá-lo, o estado de login usa a conta OAuth vinculada e o Provider usa a configuração atual do serviço de API.",
+        "currentService": "Serviço de API: {{name}}"
       }
     },
     "local": {
@@ -2262,6 +2292,21 @@
         "cockpit_api": {
           "name": "Cockpit Api"
         }
+      },
+      "oauthBinding": {
+        "label": "Vínculo OAuth",
+        "unbound": "Não vinculado",
+        "action": "Vincular OAuth",
+        "actionShort": "Vincular",
+        "title": "Vincular conta OAuth",
+        "desc": "Ao alternar para esta conta API Key, o login usa a conta OAuth vinculada e o Provider usa a configuração desta conta API Key.",
+        "currentAccount": "Conta API Key: {{name}}",
+        "selectLabel": "Selecione a conta OAuth",
+        "empty": "Nenhuma conta OAuth. Adicione primeiro uma conta autorizada por OAuth.",
+        "validationRequired": "Selecione uma conta OAuth",
+        "saveSuccess": "Vínculo OAuth atualizado",
+        "saveFailed": "Falha ao vincular OAuth: {{error}}",
+        "switchRequiresBinding": "Vincule uma conta OAuth primeiro"
       }
     },
     "modelProviders": {
@@ -2662,7 +2707,9 @@
     "cursorRefreshInterval": "Atualização automática de cota",
     "gemini": {
       "title": "Configurações do Gemini Cli",
-      "appPath": "Caminho do Gemini Cli"
+      "appPath": "Caminho do Gemini Cli",
+      "syncWsl": "Sincronizar configuração do WSL",
+      "syncWslDesc": "Sobrescreve automaticamente a configuração .gemini no WSL ao trocar de conta"
     },
     "geminiRefreshInterval": "Atualização automática de cota",
     "codebuddy": {

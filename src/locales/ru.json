@@ -1606,6 +1606,7 @@
     "installFailed": "Системная установка не удалась. Повторите попытку позже или скачайте пакет вручную.",
     "restartRequiredAfterInstall": "Обновление установлено. Перезапустите приложение вручную, чтобы завершить переключение.",
     "stoppingApiService": "Остановка API-сервиса...",
+    "stopApiServiceFailed": "Не удалось остановить службу API. Сначала отключите её и повторите попытку.",
     "skipThisVersion": "Пропустить эту версию",
     "skipFailed": "Не удалось пропустить это обновление: {{error}}"
   },
@@ -1723,12 +1724,18 @@
       "addressKind": "Тип адреса",
       "addressLocal": "Локально",
       "addressLan": "Локальная сеть",
+      "accessScopeLabel": "Область доступа",
+      "accessScopeLocalhost": "Только локально",
+      "accessScopeLan": "Локальная сеть",
+      "accessScopeLocalhostShort": "Только локально",
+      "accessScopeLanShort": "Локально+сеть",
+      "accessScopeSaveSuccess": "Область доступа API-сервиса обновлена",
       "apiKey": "Ключ",
       "statusRunning": "Запущено",
       "statusStopped": "Остановлено",
       "statusDisabled": "Отключено",
       "emptyMembers": "В коллекции пока нет аккаунтов",
-      "footerHint": "Слушает локально и в LAN",
+      "footerHint": "Область доступа: {{scope}}",
       "manageAccounts": "Управлять аккаунтами",
       "rotateKey": "Обновить ключ",
       "rotateConfirmMessage": "После сброса текущий ключ API-сервиса сразу перестанет работать, а выполняющиеся запросы могут стать недоступны. Продолжить?",
@@ -1760,10 +1767,29 @@
         "manageMembers": "Управление участниками"
       },
       "entryAction": "Добавить в API-сервис",
-      "testAction": "Проверить API-сервис",
-      "testSuccess": "Проверка API-сервиса прошла успешно ({{count}} моделей)",
-      "testTimeout": "Время проверки истекло. Убедитесь, что локальный сервис запущен.",
+      "testAction": "Тест",
+      "testDialogTitle": "Тест API-сервиса",
+      "testDialogDesc": "Отправляет реальный запрос через Codex CLI, чтобы проверить локальный сервис, ключ и ответ upstream.",
+      "testProgressTitle": "Идёт тест сервиса",
+      "testProgressDesc": "Отправляется реальный запрос к локальному API-сервису. Подождите.",
+      "testOutputTitle": "Возвращённый результат",
+      "testResultTitle": "Результат проверки сервиса",
+      "testSuccess": "Проверка сервиса успешна: локальный сервис, ключ и ответ upstream в порядке ({{model}}, {{latency}}). Если Codex всё ещё возвращает 502, проверьте Base URL, API Key или среду запуска Codex.",
+      "testFailureStage": "Этап проверки",
+      "testFailureCause": "Причина сбоя",
+      "testFailureSuggestion": "Рекомендуемое действие",
+      "testFailureStatus": "HTTP-статус",
+      "testFailureModel": "Модель проверки",
+      "testFailureDetail": "Детали диагностики",
+      "testFailureCliOutput": "Вывод CLI",
+      "testFailureGatewayOutput": "Ответ шлюза",
+      "testTimeout": "Проверка реальным запросом превысила время ожидания. Проверьте локальный сервис, прокси или upstream-сеть.",
       "testUnavailable": "Текущий URL API-сервиса недоступен",
+      "testConnectFailed": "Не удалось подключиться к {{url}}. Убедитесь, что API-сервис запущен, порт не изменён и ничего его не блокирует.",
+      "testAuthFailed": "Сервис доступен, но аутентификация не прошла: {{detail}}. Проверьте ключ API-сервиса или состояние входа в аккаунт.",
+      "testServiceUnavailable": "Сервис доступен, но сейчас недоступен: {{detail}}. Проверьте, включён ли сервис, не пуста ли коллекция аккаунтов и доступны ли аккаунты.",
+      "testRateLimited": "Сервис доступен, но upstream ограничен или квота исчерпана: {{detail}}.",
+      "testHttpFailed": "Сервис доступен, но запрос вернул HTTP {{status}}: {{detail}}.",
       "activateAction": "Запустить API-сервис",
       "activateSuccess": "Переключено на API-сервис",
       "dashboardAction": "Панель сервиса",
@@ -1778,8 +1804,8 @@
       "statsTitle": "Итого",
       "accountStatsTitle": "По аккаунтам",
       "statsEmpty": "Статистики пока нет",
-      "summaryMeta": "{{count}} аккаунтов · Локально/LAN",
-      "summaryMetaUnconfigured": "Не настроено · Локально/LAN",
+      "summaryMeta": "{{count}} аккаунтов · {{scope}}",
+      "summaryMetaUnconfigured": "Не настроено · {{scope}}",
       "memberTitle": "Участники коллекции",
       "stats": {
         "requests": "Запросы",
@@ -1858,6 +1884,10 @@
         "viewFull": "Показать полную статистику",
         "modalTitle": "Пул квот сервиса API",
         "empty": "Статистики квот пока нет"
+      },
+      "oauthBinding": {
+        "desc": "При переключении на API-сервис или его проверке состояние входа использует привязанный аккаунт OAuth, а Provider использует текущую конфигурацию API-сервиса.",
+        "currentService": "API-сервис: {{name}}"
       }
     },
     "local": {
@@ -2262,6 +2292,21 @@
         "cockpit_api": {
           "name": "Cockpit Api"
         }
+      },
+      "oauthBinding": {
+        "label": "Связь OAuth",
+        "unbound": "Не связано",
+        "action": "Связать OAuth",
+        "actionShort": "Связать",
+        "title": "Связать OAuth-аккаунт",
+        "desc": "При переключении на этот API Key аккаунт вход берется из связанного OAuth-аккаунта, а Provider использует настройки этого API Key аккаунта.",
+        "currentAccount": "API Key аккаунт: {{name}}",
+        "selectLabel": "Выберите OAuth-аккаунт",
+        "empty": "OAuth-аккаунтов пока нет. Сначала добавьте аккаунт с OAuth-авторизацией.",
+        "validationRequired": "Выберите OAuth-аккаунт",
+        "saveSuccess": "Связь OAuth обновлена",
+        "saveFailed": "Не удалось связать OAuth: {{error}}",
+        "switchRequiresBinding": "Сначала свяжите OAuth-аккаунт"
       }
     },
     "modelProviders": {
@@ -2662,7 +2707,9 @@
     "cursorRefreshInterval": "Автообновление квоты",
     "gemini": {
       "title": "Настройки Gemini Cli",
-      "appPath": "Путь Gemini Cli"
+      "appPath": "Путь Gemini Cli",
+      "syncWsl": "Синхронизировать конфигурацию WSL",
+      "syncWslDesc": "Автоматически перезаписывать конфигурацию .gemini в WSL при переключении аккаунта"
     },
     "geminiRefreshInterval": "Автоматическое обновление квоты",
     "codebuddy": {

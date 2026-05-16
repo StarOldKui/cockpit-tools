@@ -1654,6 +1654,7 @@
     "installFailed": "فشل التثبيت على النظام. حاول لاحقًا أو نزّل الحزمة يدويًا.",
     "restartRequiredAfterInstall": "تم تثبيت التحديث. أعد تشغيل التطبيق يدويًا لإكمال التبديل.",
     "stoppingApiService": "جارٍ إيقاف خدمة API...",
+    "stopApiServiceFailed": "تعذّر إيقاف خدمة API. عطّلها أولًا ثم أعد المحاولة.",
     "skipThisVersion": "تخطي هذا الإصدار",
     "skipFailed": "تعذر تخطي هذا التحديث: {{error}}"
   },
@@ -1771,12 +1772,18 @@
       "addressKind": "نوع العنوان",
       "addressLocal": "محلي",
       "addressLan": "شبكة محلية",
+      "accessScopeLabel": "نطاق الوصول",
+      "accessScopeLocalhost": "المحلي فقط",
+      "accessScopeLan": "الشبكة المحلية",
+      "accessScopeLocalhostShort": "المحلي فقط",
+      "accessScopeLanShort": "محلي+شبكة",
+      "accessScopeSaveSuccess": "تم تحديث نطاق وصول خدمة API",
       "apiKey": "المفتاح",
       "statusRunning": "قيد التشغيل",
       "statusStopped": "متوقف",
       "statusDisabled": "معطل",
       "emptyMembers": "لا توجد حسابات في المجموعة",
-      "footerHint": "يستمع محليًا وعلى LAN",
+      "footerHint": "نطاق الوصول: {{scope}}",
       "manageAccounts": "إدارة الحسابات",
       "rotateKey": "تبديل المفتاح",
       "rotateConfirmMessage": "بعد إعادة التعيين سيتوقف مفتاح خدمة API الحالي عن العمل فورًا، وقد تصبح الطلبات الجارية غير متاحة. هل تريد المتابعة؟",
@@ -1808,10 +1815,29 @@
         "manageMembers": "إدارة الأعضاء"
       },
       "entryAction": "إضافة إلى خدمة API",
-      "testAction": "اختبار خدمة API",
-      "testSuccess": "نجح اختبار خدمة API ({{count}} نموذجًا)",
-      "testTimeout": "انتهت مهلة الاختبار. تأكد من تشغيل الخدمة المحلية.",
+      "testAction": "اختبار",
+      "testDialogTitle": "اختبار خدمة API",
+      "testDialogDesc": "أرسل طلبًا حقيقيًا عبر Codex CLI للتحقق من الخدمة المحلية والمفتاح واستجابة upstream.",
+      "testProgressTitle": "جارٍ اختبار الخدمة",
+      "testProgressDesc": "جارٍ إرسال طلب حقيقي إلى خدمة API المحلية، يرجى الانتظار.",
+      "testOutputTitle": "النتيجة المرجعة",
+      "testResultTitle": "نتيجة فحص الخدمة",
+      "testSuccess": "نجح فحص الخدمة: الخدمة المحلية والمفتاح واستجابة upstream سليمة ({{model}}، {{latency}}). إذا ظل Codex يعيد 502، فتحقق من Base URL و API Key أو بيئة التشغيل في Codex.",
+      "testFailureStage": "مرحلة التشخيص",
+      "testFailureCause": "سبب الفشل",
+      "testFailureSuggestion": "الإجراء المقترح",
+      "testFailureStatus": "حالة HTTP",
+      "testFailureModel": "نموذج الاختبار",
+      "testFailureDetail": "تفاصيل التشخيص",
+      "testFailureCliOutput": "مخرجات CLI",
+      "testFailureGatewayOutput": "استجابة البوابة",
+      "testTimeout": "انتهت مهلة فحص الطلب الحقيقي. تحقق من الخدمة المحلية أو الوكيل أو شبكة upstream.",
       "testUnavailable": "عنوان خدمة API الحالي غير متاح",
+      "testConnectFailed": "لا يمكن الاتصال بـ {{url}}. تأكد من تشغيل خدمة API، وأن المنفذ لم يتغير، ولا يوجد ما يحظره.",
+      "testAuthFailed": "الخدمة قابلة للوصول، لكن المصادقة فشلت: {{detail}}. تحقق من مفتاح خدمة API أو حالة تسجيل الدخول للحساب.",
+      "testServiceUnavailable": "الخدمة قابلة للوصول، لكنها غير متاحة حاليًا: {{detail}}. تحقق من تفعيل الخدمة، أو من أن مجموعة الحسابات ليست فارغة، أو من صلاحية الحسابات.",
+      "testRateLimited": "الخدمة قابلة للوصول، لكن upstream مقيّد أو الحصة نفدت: {{detail}}.",
+      "testHttpFailed": "الخدمة قابلة للوصول، لكن الطلب أعاد HTTP {{status}}: {{detail}}.",
       "activateAction": "تشغيل خدمة API",
       "activateSuccess": "تم التبديل إلى خدمة API",
       "dashboardAction": "لوحة الخدمة",
@@ -1826,8 +1852,8 @@
       "statsTitle": "الإجمالي",
       "accountStatsTitle": "حسب الحساب",
       "statsEmpty": "لا توجد إحصاءات بعد",
-      "summaryMeta": "{{count}} حسابًا · محلي/LAN",
-      "summaryMetaUnconfigured": "غير مُعدّ · محلي/LAN",
+      "summaryMeta": "{{count}} حسابًا · {{scope}}",
+      "summaryMetaUnconfigured": "غير مهيأ · {{scope}}",
       "memberTitle": "أعضاء المجموعة",
       "stats": {
         "requests": "الطلبات",
@@ -1906,6 +1932,10 @@
         "viewFull": "عرض الإحصاء الكامل",
         "modalTitle": "مجمع حصة خدمة API",
         "empty": "لا توجد إحصاءات حصة بعد"
+      },
+      "oauthBinding": {
+        "desc": "عند التبديل إلى خدمة API أو اختبارها، تستخدم حالة تسجيل الدخول حساب OAuth المرتبط، بينما يستخدم Provider إعداد خدمة API الحالي.",
+        "currentService": "خدمة API: {{name}}"
       }
     },
     "local": {
@@ -2310,6 +2340,21 @@
         "cockpit_api": {
           "name": "Cockpit Api"
         }
+      },
+      "oauthBinding": {
+        "label": "ربط OAuth",
+        "unbound": "غير مربوط",
+        "action": "ربط OAuth",
+        "actionShort": "ربط",
+        "title": "ربط حساب OAuth",
+        "desc": "عند التبديل إلى حساب API Key هذا، تُستخدم حالة تسجيل الدخول من حساب OAuth المرتبط، ويستخدم Provider إعدادات حساب API Key الحالي.",
+        "currentAccount": "حساب API Key: {{name}}",
+        "selectLabel": "اختر حساب OAuth",
+        "empty": "لا توجد حسابات OAuth بعد. أضف حسابا مصرحا عبر OAuth أولا.",
+        "validationRequired": "اختر حساب OAuth",
+        "saveSuccess": "تم تحديث ربط OAuth",
+        "saveFailed": "فشل ربط OAuth: {{error}}",
+        "switchRequiresBinding": "اربط حساب OAuth أولا"
       }
     },
     "modelProviders": {
@@ -2710,7 +2755,9 @@
     "cursorRefreshInterval": "تحديث الحصة تلقائيًا",
     "gemini": {
       "title": "إعدادات Gemini Cli",
-      "appPath": "مسار Gemini Cli"
+      "appPath": "مسار Gemini Cli",
+      "syncWsl": "مزامنة إعدادات WSL",
+      "syncWslDesc": "استبدال إعدادات ‎.gemini‎ داخل WSL تلقائيًا عند تبديل الحساب"
     },
     "geminiRefreshInterval": "تحديث الحصة تلقائيًا",
     "codebuddy": {

@@ -1606,6 +1606,7 @@
     "installFailed": "Instalacja systemowa nie powiodła się. Spróbuj ponownie później lub pobierz pakiet ręcznie.",
     "restartRequiredAfterInstall": "Aktualizacja jest zainstalowana. Uruchom aplikację ponownie ręcznie, aby dokończyć przełączenie.",
     "stoppingApiService": "Zatrzymywanie usługi API...",
+    "stopApiServiceFailed": "Nie udało się zatrzymać usługi API. Najpierw ją wyłącz i spróbuj ponownie.",
     "skipThisVersion": "Pomiń tę wersję",
     "skipFailed": "Nie udało się pominąć tej aktualizacji: {{error}}"
   },
@@ -1723,12 +1724,18 @@
       "addressKind": "Typ adresu",
       "addressLocal": "Lokalny",
       "addressLan": "Sieć lokalna",
+      "accessScopeLabel": "Zakres dostępu",
+      "accessScopeLocalhost": "Tylko lokalnie",
+      "accessScopeLan": "Sieć lokalna",
+      "accessScopeLocalhostShort": "Tylko lokalnie",
+      "accessScopeLanShort": "Lokalnie+sieć",
+      "accessScopeSaveSuccess": "Zakres dostępu usługi API zaktualizowany",
       "apiKey": "Klucz",
       "statusRunning": "Uruchomiono",
       "statusStopped": "Zatrzymano",
       "statusDisabled": "Wyłączono",
       "emptyMembers": "W tej kolekcji nie ma jeszcze kont",
-      "footerHint": "Nasłuch lokalny i w LAN",
+      "footerHint": "Zakres dostępu: {{scope}}",
       "manageAccounts": "Zarządzaj kontami",
       "rotateKey": "Odśwież klucz",
       "rotateConfirmMessage": "Po zresetowaniu bieżący klucz usługi API natychmiast przestanie działać, a trwające żądania mogą stać się niedostępne. Kontynuować?",
@@ -1760,10 +1767,29 @@
         "manageMembers": "Zarządzaj członkami"
       },
       "entryAction": "Dodaj do usługi API",
-      "testAction": "Przetestuj usługę API",
-      "testSuccess": "Test usługi API zakończył się powodzeniem ({{count}} modeli)",
-      "testTimeout": "Przekroczono limit czasu testu. Sprawdź, czy lokalna usługa działa.",
+      "testAction": "Testuj",
+      "testDialogTitle": "Test usługi API",
+      "testDialogDesc": "Wyślij prawdziwe żądanie przez Codex CLI, aby sprawdzić usługę lokalną, klucz i odpowiedź upstream.",
+      "testProgressTitle": "Trwa test usługi",
+      "testProgressDesc": "Wysyłane jest prawdziwe żądanie do lokalnej usługi API. Poczekaj.",
+      "testOutputTitle": "Zwrócony wynik",
+      "testResultTitle": "Wynik sprawdzenia usługi",
+      "testSuccess": "Sprawdzenie usługi powiodło się: lokalna usługa, klucz i odpowiedź upstream działają poprawnie ({{model}}, {{latency}}). Jeśli Codex nadal zwraca 502, sprawdź Base URL, API Key lub środowisko uruchomieniowe Codex.",
+      "testFailureStage": "Etap diagnozy",
+      "testFailureCause": "Przyczyna błędu",
+      "testFailureSuggestion": "Sugerowana naprawa",
+      "testFailureStatus": "Status HTTP",
+      "testFailureModel": "Model testowy",
+      "testFailureDetail": "Szczegóły diagnostyki",
+      "testFailureCliOutput": "Wyjście CLI",
+      "testFailureGatewayOutput": "Odpowiedź bramy",
+      "testTimeout": "Sprawdzenie rzeczywistym żądaniem przekroczyło limit czasu. Sprawdź lokalną usługę, proxy lub sieć upstream.",
       "testUnavailable": "Bieżący adres URL usługi API jest niedostępny",
+      "testConnectFailed": "Nie można połączyć się z {{url}}. Sprawdź, czy usługa API działa, port się nie zmienił i nic go nie blokuje.",
+      "testAuthFailed": "Usługa jest osiągalna, ale uwierzytelnianie nie powiodło się: {{detail}}. Sprawdź klucz usługi API lub stan logowania konta.",
+      "testServiceUnavailable": "Usługa jest osiągalna, ale obecnie niedostępna: {{detail}}. Sprawdź, czy usługa jest włączona, kolekcja kont nie jest pusta i konta są używalne.",
+      "testRateLimited": "Usługa jest osiągalna, ale upstream jest ograniczony lub limit został wyczerpany: {{detail}}.",
+      "testHttpFailed": "Usługa jest osiągalna, ale żądanie zwróciło HTTP {{status}}: {{detail}}.",
       "activateAction": "Uruchom usługę API",
       "activateSuccess": "Przełączono na usługę API",
       "dashboardAction": "Panel usługi",
@@ -1778,8 +1804,8 @@
       "statsTitle": "Łącznie",
       "accountStatsTitle": "Według konta",
       "statsEmpty": "Brak statystyk",
-      "summaryMeta": "{{count}} kont · Lokalnie/LAN",
-      "summaryMetaUnconfigured": "Nieskonfigurowane · Lokalnie/LAN",
+      "summaryMeta": "{{count}} kont · {{scope}}",
+      "summaryMetaUnconfigured": "Nie skonfigurowano · {{scope}}",
       "memberTitle": "Członkowie kolekcji",
       "stats": {
         "requests": "Żądania",
@@ -1858,6 +1884,10 @@
         "viewFull": "Pokaż pełne statystyki",
         "modalTitle": "Pula limitów usługi API",
         "empty": "Brak statystyk limitów"
+      },
+      "oauthBinding": {
+        "desc": "Podczas przełączania na usługę API lub jej testowania stan logowania używa powiązanego konta OAuth, a Provider używa bieżącej konfiguracji usługi API.",
+        "currentService": "Usługa API: {{name}}"
       }
     },
     "local": {
@@ -2262,6 +2292,21 @@
         "cockpit_api": {
           "name": "Cockpit Api"
         }
+      },
+      "oauthBinding": {
+        "label": "Powiązanie OAuth",
+        "unbound": "Niepowiązane",
+        "action": "Powiąż OAuth",
+        "actionShort": "Powiąż",
+        "title": "Powiąż konto OAuth",
+        "desc": "Przy przełączeniu na to konto API Key logowanie używa powiązanego konta OAuth, a Provider używa konfiguracji tego konta API Key.",
+        "currentAccount": "Konto API Key: {{name}}",
+        "selectLabel": "Wybierz konto OAuth",
+        "empty": "Brak kont OAuth. Najpierw dodaj konto z autoryzacją OAuth.",
+        "validationRequired": "Wybierz konto OAuth",
+        "saveSuccess": "Powiązanie OAuth zaktualizowane",
+        "saveFailed": "Nie udało się powiązać OAuth: {{error}}",
+        "switchRequiresBinding": "Najpierw powiąż konto OAuth"
       }
     },
     "modelProviders": {
@@ -2662,7 +2707,9 @@
     "cursorRefreshInterval": "Automatyczne odświeżanie limitu",
     "gemini": {
       "title": "Ustawienia Gemini Cli",
-      "appPath": "Ścieżka Gemini Cli"
+      "appPath": "Ścieżka Gemini Cli",
+      "syncWsl": "Synchronizuj konfigurację WSL",
+      "syncWslDesc": "Podczas przełączania konta automatycznie nadpisz konfigurację .gemini w WSL"
     },
     "geminiRefreshInterval": "Automatyczne odświeżanie limitu",
     "codebuddy": {

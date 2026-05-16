@@ -278,6 +278,7 @@ pub fn run() {
                     }
                     CloseWindowBehavior::Quit => {
                         info!("[Window] 用户选择退出应用");
+                        window.app_handle().exit(0);
                     }
                     CloseWindowBehavior::Ask => {
                         api.prevent_close();
@@ -467,6 +468,7 @@ pub fn run() {
             commands::codex::add_codex_account_with_api_key,
             commands::codex::update_codex_account_name,
             commands::codex::update_codex_api_key_credentials,
+            commands::codex::update_codex_api_key_bound_oauth_account,
             commands::codex::is_codex_oauth_port_in_use,
             commands::codex::close_codex_oauth_port,
             commands::codex::update_codex_account_tags,
@@ -491,13 +493,16 @@ pub fn run() {
             commands::codex::codex_local_access_save_accounts,
             commands::codex::codex_local_access_remove_account,
             commands::codex::codex_local_access_rotate_api_key,
+            commands::codex::codex_local_access_update_bound_oauth_account,
             commands::codex::codex_local_access_clear_stats,
             commands::codex::codex_local_access_prepare_restart,
             commands::codex::codex_local_access_kill_port,
             commands::codex::codex_local_access_update_port,
             commands::codex::codex_local_access_update_routing_strategy,
+            commands::codex::codex_local_access_update_access_scope,
             commands::codex::codex_local_access_set_enabled,
             commands::codex::codex_local_access_activate,
+            commands::codex::codex_local_access_test,
             // GitHub Copilot Commands
             commands::github_copilot::list_github_copilot_accounts,
             commands::github_copilot::delete_github_copilot_account,

@@ -1606,6 +1606,7 @@
     "installFailed": "システムへのインストールに失敗しました。後でもう一度試すか、手動でダウンロードしてください。",
     "restartRequiredAfterInstall": "更新はインストール済みです。切り替えを完了するにはアプリを手動で再起動してください。",
     "stoppingApiService": "API サービスを停止中...",
+    "stopApiServiceFailed": "API サービスを停止できませんでした。先に無効化してから再試行してください。",
     "skipThisVersion": "このバージョンをスキップ",
     "skipFailed": "この更新をスキップできませんでした: {{error}}"
   },
@@ -1723,12 +1724,18 @@
       "addressKind": "アドレス種別",
       "addressLocal": "ローカル",
       "addressLan": "ローカル網",
+      "accessScopeLabel": "アクセス範囲",
+      "accessScopeLocalhost": "ローカルのみ",
+      "accessScopeLan": "ローカル網",
+      "accessScopeLocalhostShort": "ローカルのみ",
+      "accessScopeLanShort": "ローカル+ネット",
+      "accessScopeSaveSuccess": "APIサービスのアクセス範囲を更新しました",
       "apiKey": "キー",
       "statusRunning": "稼働中",
       "statusStopped": "停止",
       "statusDisabled": "無効",
       "emptyMembers": "この集合にはまだアカウントがありません",
-      "footerHint": "ローカルとLANで待ち受けます",
+      "footerHint": "アクセス範囲：{{scope}}",
       "manageAccounts": "アカウント管理",
       "rotateKey": "キーを再発行",
       "rotateConfirmMessage": "リセット後は現在の API サービスキーがすぐに無効になり、進行中のリクエストが利用できなくなる可能性があります。続行しますか？",
@@ -1760,10 +1767,29 @@
         "manageMembers": "メンバー管理"
       },
       "entryAction": "API サービスに追加",
-      "testAction": "API サービスをテスト",
-      "testSuccess": "API サービスのテストに成功しました（{{count}} モデル）",
-      "testTimeout": "テストがタイムアウトしました。ローカルサービスが起動しているか確認してください。",
+      "testAction": "テスト",
+      "testDialogTitle": "API サービスをテスト",
+      "testDialogDesc": "Codex CLI から実リクエストを送り、ローカルサービス、キー、上流応答を確認します。",
+      "testProgressTitle": "サービスをテスト中",
+      "testProgressDesc": "ローカル API サービスへ実リクエストを送信しています。しばらくお待ちください。",
+      "testOutputTitle": "返却結果",
+      "testResultTitle": "サービス確認結果",
+      "testSuccess": "サービス確認に成功しました。ローカルサービス、キー、上流応答は正常です（{{model}}、{{latency}}）。Codex が引き続き 502 を返す場合は、Codex の Base URL、API Key、実行環境を確認してください。",
+      "testFailureStage": "特定段階",
+      "testFailureCause": "失敗理由",
+      "testFailureSuggestion": "対処方法",
+      "testFailureStatus": "HTTP ステータス",
+      "testFailureModel": "確認モデル",
+      "testFailureDetail": "診断詳細",
+      "testFailureCliOutput": "CLI 出力",
+      "testFailureGatewayOutput": "ゲートウェイ応答",
+      "testTimeout": "実リクエスト確認がタイムアウトしました。ローカルサービス、プロキシ、上流ネットワークを確認してください。",
       "testUnavailable": "現在の API サービス URL は利用できません",
+      "testConnectFailed": "{{url}} に接続できません。API サービスが起動していること、ポートが変更されていないこと、ブロックされていないことを確認してください。",
+      "testAuthFailed": "サービスには到達しましたが、認証に失敗しました: {{detail}}。API サービスキーまたはアカウントのログイン状態を確認してください。",
+      "testServiceUnavailable": "サービスには到達しましたが、現在利用できません: {{detail}}。サービスが有効か、アカウント集合が空でないか、アカウントが利用可能かを確認してください。",
+      "testRateLimited": "サービスには到達しましたが、上流でレート制限またはクォータ不足です: {{detail}}。",
+      "testHttpFailed": "サービスには到達しましたが、リクエストは HTTP {{status}} を返しました: {{detail}}。",
       "activateAction": "API サービスを起動",
       "activateSuccess": "API サービスに切り替えました",
       "dashboardAction": "サービスパネル",
@@ -1778,8 +1804,8 @@
       "statsTitle": "合計",
       "accountStatsTitle": "アカウント別",
       "statsEmpty": "まだ統計はありません",
-      "summaryMeta": "{{count}} 件のアカウント · ローカル/LAN",
-      "summaryMetaUnconfigured": "未設定 · ローカル/LAN",
+      "summaryMeta": "{{count}} 件のアカウント · {{scope}}",
+      "summaryMetaUnconfigured": "未設定 · {{scope}}",
       "memberTitle": "集合メンバー",
       "stats": {
         "requests": "リクエスト",
@@ -1858,6 +1884,10 @@
         "viewFull": "完全な統計を表示",
         "modalTitle": "APIサービスのクォータプール",
         "empty": "クォータ統計はまだありません"
+      },
+      "oauthBinding": {
+        "desc": "API サービスへの切り替えまたはテスト時は、ログイン状態に紐付けた OAuth アカウントを使い、Provider は現在の API サービス設定を使います。",
+        "currentService": "API サービス：{{name}}"
       }
     },
     "local": {
@@ -2262,6 +2292,21 @@
         "cockpit_api": {
           "name": "Cockpit Api"
         }
+      },
+      "oauthBinding": {
+        "label": "OAuth 連携",
+        "unbound": "未連携",
+        "action": "OAuth 連携",
+        "actionShort": "連携",
+        "title": "OAuth アカウントを連携",
+        "desc": "この API Key アカウントへ切り替えると、ログイン状態は連携した OAuth アカウントを使い、Provider はこの API Key アカウントの設定を使います。",
+        "currentAccount": "API Key アカウント：{{name}}",
+        "selectLabel": "OAuth アカウントを選択",
+        "empty": "OAuth アカウントがありません。先に OAuth 認証アカウントを追加してください。",
+        "validationRequired": "OAuth アカウントを選択してください",
+        "saveSuccess": "OAuth 連携を更新しました",
+        "saveFailed": "OAuth 連携に失敗しました：{{error}}",
+        "switchRequiresBinding": "先に OAuth アカウントを連携してください"
       }
     },
     "modelProviders": {
@@ -2662,7 +2707,9 @@
     "cursorRefreshInterval": "クォータ自動更新",
     "gemini": {
       "title": "Gemini Cli 設定",
-      "appPath": "Gemini Cli パス"
+      "appPath": "Gemini Cli パス",
+      "syncWsl": "WSL 設定を同期",
+      "syncWslDesc": "アカウント切り替え時に WSL 内の .gemini 設定を自動で上書きします"
     },
     "geminiRefreshInterval": "クォータ自動更新",
     "codebuddy": {

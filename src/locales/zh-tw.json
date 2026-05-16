@@ -1606,6 +1606,7 @@
     "installFailed": "系統安裝失敗，請稍後重試或手動下載安裝。",
     "restartRequiredAfterInstall": "更新已安裝，請手動重新啟動應用程式完成切換。",
     "stoppingApiService": "正在關閉 API 服務...",
+    "stopApiServiceFailed": "無法關閉 API 服務，請先停用後重試。",
     "skipThisVersion": "跳過此版本",
     "skipFailed": "跳過此更新失敗：{{error}}"
   },
@@ -1723,12 +1724,18 @@
       "addressKind": "位址類型",
       "addressLocal": "本機",
       "addressLan": "區域網路",
+      "accessScopeLabel": "存取範圍",
+      "accessScopeLocalhost": "僅本機",
+      "accessScopeLan": "區域網路",
+      "accessScopeLocalhostShort": "僅本機",
+      "accessScopeLanShort": "本機+區網",
+      "accessScopeSaveSuccess": "API 服務存取範圍已更新",
       "apiKey": "金鑰",
       "statusRunning": "執行中",
       "statusStopped": "未執行",
       "statusDisabled": "已停用",
       "emptyMembers": "目前集合沒有帳號",
-      "footerHint": "監聽本機與區域網路",
+      "footerHint": "監聽範圍：{{scope}}",
       "manageAccounts": "管理帳號",
       "rotateKey": "重設金鑰",
       "rotateConfirmMessage": "重設後目前的 API 服務金鑰會立即失效，進行中的請求可能無法使用。確認繼續嗎？",
@@ -1760,10 +1767,29 @@
         "manageMembers": "管理成員"
       },
       "entryAction": "加入 API 服務",
-      "testAction": "測試 API 服務",
-      "testSuccess": "API 服務測試成功（{{count}} 個模型）",
-      "testTimeout": "測試逾時，請確認本地服務已啟動",
+      "testAction": "測試",
+      "testDialogTitle": "測試 API 服務",
+      "testDialogDesc": "透過 Codex CLI 發出一次真實請求，驗證本機服務、密鑰與上游回應。",
+      "testProgressTitle": "正在測試服務",
+      "testProgressDesc": "正在向本機 API 服務發出真實請求，請稍候。",
+      "testOutputTitle": "回傳結果",
+      "testResultTitle": "服務檢測結果",
+      "testSuccess": "服務檢測成功：本地服務、密鑰與上游回應正常（{{model}}，{{latency}}）。如果 Codex 仍回報 502，請檢查 Codex 的 Base URL、API Key 或執行環境。",
+      "testFailureStage": "定位階段",
+      "testFailureCause": "失敗原因",
+      "testFailureSuggestion": "處理建議",
+      "testFailureStatus": "HTTP 狀態",
+      "testFailureModel": "檢測模型",
+      "testFailureDetail": "診斷詳情",
+      "testFailureCliOutput": "CLI 輸出",
+      "testFailureGatewayOutput": "網關回應",
+      "testTimeout": "真實請求檢測逾時，請檢查本地服務、代理或上游網路。",
       "testUnavailable": "目前的 API 服務位址不可用",
+      "testConnectFailed": "無法連線到 {{url}}。請確認 API 服務已啟動、連接埠未被變更或阻擋。",
+      "testAuthFailed": "服務可達，但驗證失敗：{{detail}}。請檢查 API 服務密鑰或帳號登入狀態。",
+      "testServiceUnavailable": "服務可達，但目前不可用：{{detail}}。請檢查服務是否啟用、帳號集合是否為空或帳號是否可用。",
+      "testRateLimited": "服務可達，但上游限流或額度不足：{{detail}}。",
+      "testHttpFailed": "服務可達，但請求返回 HTTP {{status}}：{{detail}}。",
       "activateAction": "啟動 API 服務",
       "activateSuccess": "已切換到 API 服務",
       "dashboardAction": "服務面板",
@@ -1778,8 +1804,8 @@
       "statsTitle": "總量統計",
       "accountStatsTitle": "依帳號統計",
       "statsEmpty": "目前還沒有統計資料",
-      "summaryMeta": "{{count}} 個帳號 · 本機/區網",
-      "summaryMetaUnconfigured": "未設定 · 本機/區網",
+      "summaryMeta": "{{count}} 個帳號 · {{scope}}",
+      "summaryMetaUnconfigured": "未設定 · {{scope}}",
       "memberTitle": "集合成員",
       "stats": {
         "requests": "總請求數",
@@ -1858,6 +1884,10 @@
         "viewFull": "查看完整統計",
         "modalTitle": "API 服務額度池",
         "empty": "尚無額度統計"
+      },
+      "oauthBinding": {
+        "desc": "切換或測試 API 服務時，登入狀態使用綁定的 OAuth 帳號，Provider 使用目前 API 服務設定。",
+        "currentService": "API 服務：{{name}}"
       }
     },
     "api": {
@@ -1949,6 +1979,21 @@
         "cockpit_api": {
           "name": "Cockpit Api"
         }
+      },
+      "oauthBinding": {
+        "label": "OAuth 綁定",
+        "unbound": "未綁定",
+        "action": "綁定 OAuth",
+        "actionShort": "綁定",
+        "title": "綁定 OAuth 帳號",
+        "desc": "切換此 API Key 帳號時，登入狀態使用綁定的 OAuth 帳號，Provider 使用目前 API Key 帳號設定。",
+        "currentAccount": "API Key 帳號：{{name}}",
+        "selectLabel": "選擇 OAuth 帳號",
+        "empty": "尚無 OAuth 帳號，請先新增 OAuth 授權帳號。",
+        "validationRequired": "請選擇 OAuth 帳號",
+        "saveSuccess": "OAuth 綁定已更新",
+        "saveFailed": "OAuth 綁定失敗：{{error}}",
+        "switchRequiresBinding": "請先綁定 OAuth 帳號"
       }
     },
     "local": {
@@ -2662,7 +2707,9 @@
     "cursorRefreshInterval": "配額自動更新",
     "gemini": {
       "title": "Gemini Cli 設定",
-      "appPath": "Gemini Cli 路徑"
+      "appPath": "Gemini Cli 路徑",
+      "syncWsl": "同步 WSL 設定",
+      "syncWslDesc": "切換帳號時自動覆寫 WSL 內的 .gemini 設定"
     },
     "geminiRefreshInterval": "配額自動刷新",
     "codebuddy": {

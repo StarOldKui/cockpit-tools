@@ -1655,7 +1655,8 @@
     "authorizing": "等待系统授权安装...",
     "installFailed": "系统安装失败，请稍后重试或手动下载安装。",
     "restartRequiredAfterInstall": "更新已安装，请手动重启应用完成切换。",
-    "stoppingApiService": "正在关闭 API 服务..."
+    "stoppingApiService": "正在关闭 API 服务...",
+    "stopApiServiceFailed": "无法关闭 API 服务，请先停用后重试。"
   },
   "closeDialog": {
     "title": "关闭窗口",
@@ -1799,6 +1800,12 @@
       "addressKind": "地址类型",
       "addressLocal": "本机",
       "addressLan": "局域网",
+      "accessScopeLabel": "访问范围",
+      "accessScopeLocalhost": "仅本机",
+      "accessScopeLan": "局域网",
+      "accessScopeLocalhostShort": "仅本机",
+      "accessScopeLanShort": "本机+局域网",
+      "accessScopeSaveSuccess": "API 服务访问范围已更新",
       "apiPortUrl": "API端口URL",
       "apiKey": "密钥",
       "modelId": "模型 ID",
@@ -1809,17 +1816,36 @@
       "statusDisabled": "已停用",
       "statusUnconfigured": "未配置",
       "emptyMembers": "将账号添加到 API 服务，点击启动即可，无需其他配置",
-      "footerHint": "监听本机与局域网",
+      "footerHint": "监听范围：{{scope}}",
       "memberOnlyLocal": "本机/局域网",
       "manageAccounts": "管理账号",
       "rotateKey": "重置密钥",
       "rotateConfirmMessage": "重置后当前 API 服务密钥会立即失效，正在进行中的请求可能不可用。确认继续吗？",
       "disableService": "停用服务",
       "enableService": "启用服务",
-      "testAction": "测试 API 服务",
-      "testSuccess": "API 服务测试成功（{{count}} 个模型）",
-      "testTimeout": "测试超时，请确认本地服务已启动",
+      "testAction": "测试",
+      "testDialogTitle": "测试 API 服务",
+      "testDialogDesc": "通过 Codex CLI 发起一次真实请求，验证本地服务、密钥和上游响应。",
+      "testProgressTitle": "正在测试服务",
+      "testProgressDesc": "正在向本地 API 服务发起真实请求，请稍候。",
+      "testOutputTitle": "返回结果",
+      "testResultTitle": "服务检测结果",
+      "testSuccess": "服务检测成功：本地服务、密钥和上游响应正常（{{model}}，{{latency}}）。如果 Codex 仍报 502，请检查 Codex 的 Base URL、API Key 或运行环境。",
+      "testFailureStage": "定位阶段",
+      "testFailureCause": "失败原因",
+      "testFailureSuggestion": "处理建议",
+      "testFailureStatus": "HTTP 状态",
+      "testFailureModel": "检测模型",
+      "testFailureDetail": "诊断详情",
+      "testFailureCliOutput": "CLI 输出",
+      "testFailureGatewayOutput": "网关返回",
+      "testTimeout": "真实请求检测超时，请检查本地服务、代理或上游网络。",
       "testUnavailable": "当前 API 服务地址不可用",
+      "testConnectFailed": "无法连接 {{url}}。请确认 API 服务已启动、端口未被改动或被拦截。",
+      "testAuthFailed": "服务可达，但鉴权失败：{{detail}}。请检查 API 服务密钥或账号登录状态。",
+      "testServiceUnavailable": "服务可达，但当前不可用：{{detail}}。请检查服务是否启用、账号集合是否为空或账号是否可用。",
+      "testRateLimited": "服务可达，但上游限流或额度不足：{{detail}}。",
+      "testHttpFailed": "服务可达，但请求返回 HTTP {{status}}：{{detail}}。",
       "activateAction": "启动 API 服务",
       "enableBeforeActivateTitle": "服务未启用",
       "enableBeforeActivateMessage": "API 服务当前未启用，需要先启用服务。是否启用并切号？",
@@ -1862,8 +1888,8 @@
       "refreshStatsSuccess": "API 服务统计已刷新",
       "accountStatsTitle": "按账号统计",
       "statsEmpty": "当前还没有统计数据",
-      "summaryMeta": "{{count}} 个账号 · 本机/局域网",
-      "summaryMetaUnconfigured": "未配置 · 本机/局域网",
+      "summaryMeta": "{{count}} 个账号 · {{scope}}",
+      "summaryMetaUnconfigured": "未配置 · {{scope}}",
       "expandDetails": "展开详情",
       "collapseDetails": "收起详情",
       "hideEntryAction": "关闭 API 服务入口",
@@ -1931,6 +1957,10 @@
         "available": "普通面板",
         "manageMembers": "管理成员",
         "save": "保存集合"
+      },
+      "oauthBinding": {
+        "desc": "切换或测试 API 服务时，登录态使用绑定的 OAuth 账号，Provider 使用当前 API 服务配置。",
+        "currentService": "API 服务：{{name}}"
       }
     },
     "api": {
@@ -2022,6 +2052,21 @@
         "apiKeyCannotBeUrl": "API Key 不能是 URL，请检查是否填反",
         "baseUrlInvalid": "Base URL 格式无效，请输入完整的 http:// 或 https:// 地址",
         "apiKeyEqualsBaseUrl": "API Key 不能与 Base URL 相同"
+      },
+      "oauthBinding": {
+        "label": "OAuth 绑定",
+        "unbound": "未绑定",
+        "action": "绑定 OAuth",
+        "actionShort": "绑定",
+        "title": "绑定 OAuth 账号",
+        "desc": "切换该 API Key 账号时，登录态使用绑定的 OAuth 账号，Provider 使用当前 API Key 账号配置。",
+        "currentAccount": "API Key 账号：{{name}}",
+        "selectLabel": "选择 OAuth 账号",
+        "empty": "暂无 OAuth 账号，请先添加 OAuth 授权账号。",
+        "validationRequired": "请选择 OAuth 账号",
+        "saveSuccess": "OAuth 绑定已更新",
+        "saveFailed": "OAuth 绑定失败：{{error}}",
+        "switchRequiresBinding": "请先绑定 OAuth 账号"
       }
     },
     "cockpitApi": {
@@ -2819,7 +2864,9 @@
     },
     "gemini": {
       "title": "Gemini Cli 设置",
-      "appPath": "Gemini Cli 路径"
+      "appPath": "Gemini Cli 路径",
+      "syncWsl": "同步 WSL 配置",
+      "syncWslDesc": "切换账号时自动覆盖 WSL 下的 .gemini 配置"
     },
     "geminiRefreshInterval": "配额自动刷新",
     "error": {
