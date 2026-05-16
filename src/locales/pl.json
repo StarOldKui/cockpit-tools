@@ -3763,6 +3763,8 @@
       "pin": "Przypnij",
       "unpin": "Odepnij",
       "close": "Zamknij",
+      "compact": "Widok kompaktowy",
+      "exitCompact": "Zamknij widok kompaktowy",
       "previousAccount": "Poprzednie konto",
       "nextAccount": "Następne konto",
       "viewRecommended": "Pokaż polecane konto",

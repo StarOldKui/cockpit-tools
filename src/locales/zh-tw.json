@@ -3763,6 +3763,8 @@
       "pin": "置頂",
       "unpin": "取消置頂",
       "close": "關閉",
+      "compact": "緊湊視圖",
+      "exitCompact": "退出緊湊視圖",
       "previousAccount": "上一個帳號",
       "nextAccount": "下一個帳號",
       "viewRecommended": "查看推薦帳號",

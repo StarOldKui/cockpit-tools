@@ -1,0 +1,11 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "floating-card-window",
+  "description": "Window controls for floating card windows",
+  "windows": ["floating-card", "instance-floating-card-*"],
+  "permissions": [
+    "core:window:allow-set-min-size",
+    "core:window:allow-set-resizable",
+    "core:window:allow-set-size"
+  ]
+}

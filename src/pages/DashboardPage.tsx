@@ -22,45 +22,27 @@ import {
   usePlatformLayoutStore,
 } from '../stores/usePlatformLayoutStore';
 import { Page } from '../types/navigation';
-import { Users, CheckCircle2, Sparkles, RotateCw, Play, Github, Tag, ChevronDown, EyeOff } from 'lucide-react';
+import { Users, CheckCircle2, RotateCw, Play, Github, Tag, ChevronDown, EyeOff } from 'lucide-react';
 import { TagEditModal } from '../components/TagEditModal';
 import { Account } from '../types/account';
 import {
   CodebuddyAccount,
-  getCodebuddyResourceSummary,
-  getCodebuddyExtraCreditSummary,
-  getCodebuddyOfficialQuotaModel,
   getCodebuddyQuotaCategoryGroups,
 } from '../types/codebuddy';
-import {
-  QoderAccount,
-  getQoderSubscriptionInfo,
-} from '../types/qoder';
-import {
-  TraeAccount,
-  getTraeUsage,
-} from '../types/trae';
-import {
-  WorkbuddyAccount,
-  getWorkbuddyOfficialQuotaModel,
-} from '../types/workbuddy';
+import { QoderAccount } from '../types/qoder';
+import { TraeAccount } from '../types/trae';
+import { WorkbuddyAccount } from '../types/workbuddy';
 import { CodexAccount } from '../types/codex';
 import { GitHubCopilotAccount } from '../types/githubCopilot';
 import {
   WindsurfAccount,
-  getWindsurfCreditsSummary,
 } from '../types/windsurf';
 import {
   KiroAccount,
-  getKiroCreditsSummary,
-  isKiroAccountBanned,
 } from '../types/kiro';
-import { CursorAccount, getCursorUsage } from '../types/cursor';
-import {
-  GeminiAccount,
-  getGeminiTierQuotaSummary,
-} from '../types/gemini';
-import { ZedAccount, getZedUsage } from '../types/zed';
+import { CursorAccount } from '../types/cursor';
+import { GeminiAccount } from '../types/gemini';
+import { ZedAccount } from '../types/zed';
 import './DashboardPage.css';
 import { RobotIcon } from '../components/icons/RobotIcon';
 import { CodexIcon } from '../components/icons/CodexIcon';
@@ -99,17 +81,12 @@ interface DashboardPageProps {
   onNavigate: (page: Page) => void;
   onOpenPlatformLayout: () => void;
   onEasterEggTriggerClick: () => void;
-  topCenterBanner?: React.ReactNode;
 }
 
 const DASHBOARD_DEFERRED_PREFETCH_DELAY_MS = 6000;
 const DASHBOARD_DEFERRED_PREFETCH_BATCH_SIZE = 1;
 const DASHBOARD_DEFERRED_PREFETCH_BATCH_DELAY_MS = 1200;
 let dashboardStartupPrefetched = false;
-
-function toFiniteNumber(value: number | null | undefined): number | null {
-  return typeof value === 'number' && Number.isFinite(value) ? value : null;
-}
 
 function resolveDashboardCurrentAccount<T extends { id: string }>(
   accounts: T[],
@@ -125,35 +102,6 @@ function resolveDashboardCurrentAccount<T extends { id: string }>(
   return accounts[0] ?? null;
 }
 
-function getZedRecommendationScore(account: ZedAccount): { remainingPercent: number; freshness: number } {
-  const usage = getZedUsage(account);
-  const remainingValues: number[] = [];
-
-  if (
-    usage.remainingCompletions != null &&
-    usage.totalCompletions != null &&
-    usage.totalCompletions > 0
-  ) {
-    remainingValues.push((usage.remainingCompletions / usage.totalCompletions) * 100);
-  }
-
-  if (
-    usage.remainingChat != null &&
-    usage.totalChat != null &&
-    usage.totalChat > 0
-  ) {
-    remainingValues.push((usage.remainingChat / usage.totalChat) * 100);
-  }
-
-  return {
-    remainingPercent:
-      remainingValues.length > 0
-        ? remainingValues.reduce((sum, value) => sum + value, 0) / remainingValues.length
-        : -1,
-    freshness: account.last_used || account.created_at || 0,
-  };
-}
-
 interface DashboardCardCollapseState {
   workbuddy: boolean;
 }
@@ -162,7 +110,6 @@ export function DashboardPage({
   onNavigate,
   onOpenPlatformLayout,
   onEasterEggTriggerClick,
-  topCenterBanner,
 }: DashboardPageProps) {
   const { t } = useTranslation();
 
@@ -690,7 +637,7 @@ export function DashboardPage({
   const handleRefreshAgCard = async () => {
     if (cardRefreshing.ag) return;
     setCardRefreshing(prev => ({ ...prev, ag: true }));
-    const idsToRefresh = Array.from(new Set([agCurrentAccount?.id, agRecommended?.id].filter(Boolean))) as string[];
+    const idsToRefresh = [agCurrentAccount?.id].filter(Boolean) as string[];
     try {
       for (const id of idsToRefresh) {
         await useAccountStore.getState().refreshQuota(id);
@@ -705,7 +652,7 @@ export function DashboardPage({
   const handleRefreshCodexCard = async () => {
     if (cardRefreshing.codex) return;
     setCardRefreshing(prev => ({ ...prev, codex: true }));
-    const idsToRefresh = Array.from(new Set([codexCurrentAccount?.id, codexRecommended?.id].filter(Boolean))) as string[];
+    const idsToRefresh = [codexCurrentAccount?.id].filter(Boolean) as string[];
     try {
       for (const id of idsToRefresh) {
         await useCodexAccountStore.getState().refreshQuota(id);
@@ -720,7 +667,7 @@ export function DashboardPage({
   const handleRefreshZedCard = async () => {
     if (cardRefreshing.zed) return;
     setCardRefreshing((prev) => ({ ...prev, zed: true }));
-    const idsToRefresh = [zedCurrent?.id, zedRecommended?.id].filter(Boolean) as string[];
+    const idsToRefresh = [zedCurrent?.id].filter(Boolean) as string[];
     try {
       for (const id of idsToRefresh) {
         await useZedAccountStore.getState().refreshToken(id);
@@ -735,7 +682,7 @@ export function DashboardPage({
   const handleRefreshGitHubCopilotCard = async () => {
     if (cardRefreshing.githubCopilot) return;
     setCardRefreshing(prev => ({ ...prev, githubCopilot: true }));
-    const idsToRefresh = [githubCopilotCurrent?.id, githubCopilotRecommended?.id].filter(Boolean) as string[];
+    const idsToRefresh = [githubCopilotCurrent?.id].filter(Boolean) as string[];
     try {
       for (const id of idsToRefresh) {
         await useGitHubCopilotAccountStore.getState().refreshToken(id);
@@ -750,7 +697,7 @@ export function DashboardPage({
   const handleRefreshWindsurfCard = async () => {
     if (cardRefreshing.windsurf) return;
     setCardRefreshing((prev) => ({ ...prev, windsurf: true }));
-    const idsToRefresh = [windsurfCurrent?.id, windsurfRecommended?.id].filter(Boolean) as string[];
+    const idsToRefresh = [windsurfCurrent?.id].filter(Boolean) as string[];
     try {
       for (const id of idsToRefresh) {
         await useWindsurfAccountStore.getState().refreshToken(id);
@@ -765,7 +712,7 @@ export function DashboardPage({
   const handleRefreshKiroCard = async () => {
     if (cardRefreshing.kiro) return;
     setCardRefreshing((prev) => ({ ...prev, kiro: true }));
-    const idsToRefresh = [kiroCurrent?.id, kiroRecommended?.id].filter(Boolean) as string[];
+    const idsToRefresh = [kiroCurrent?.id].filter(Boolean) as string[];
     try {
       for (const id of idsToRefresh) {
         await useKiroAccountStore.getState().refreshToken(id);
@@ -780,7 +727,7 @@ export function DashboardPage({
   const handleRefreshCursorCard = async () => {
     if (cardRefreshing.cursor) return;
     setCardRefreshing((prev) => ({ ...prev, cursor: true }));
-    const idsToRefresh = [cursorCurrent?.id, cursorRecommended?.id].filter(Boolean) as string[];
+    const idsToRefresh = [cursorCurrent?.id].filter(Boolean) as string[];
     try {
       for (const id of idsToRefresh) {
         await useCursorAccountStore.getState().refreshToken(id);
@@ -795,7 +742,7 @@ export function DashboardPage({
   const handleRefreshGeminiCard = async () => {
     if (cardRefreshing.gemini) return;
     setCardRefreshing((prev) => ({ ...prev, gemini: true }));
-    const idsToRefresh = [geminiCurrent?.id, geminiRecommended?.id].filter(Boolean) as string[];
+    const idsToRefresh = [geminiCurrent?.id].filter(Boolean) as string[];
     try {
       for (const id of idsToRefresh) {
         await useGeminiAccountStore.getState().refreshToken(id);
@@ -986,7 +933,7 @@ export function DashboardPage({
   const handleRefreshCodebuddyCard = async () => {
     if (cardRefreshing.codebuddy) return;
     setCardRefreshing((prev) => ({ ...prev, codebuddy: true }));
-    const idsToRefresh = [codebuddyCurrent?.id, codebuddyRecommended?.id].filter(Boolean) as string[];
+    const idsToRefresh = [codebuddyCurrent?.id].filter(Boolean) as string[];
     try {
       for (const id of idsToRefresh) {
         await useCodebuddyAccountStore.getState().refreshToken(id);
@@ -1001,7 +948,7 @@ export function DashboardPage({
   const handleRefreshCodebuddyCnCard = async () => {
     if (cardRefreshing.codebuddyCn) return;
     setCardRefreshing((prev) => ({ ...prev, codebuddyCn: true }));
-    const idsToRefresh = Array.from(new Set([codebuddyCnCurrent?.id, codebuddyCnRecommended?.id].filter(Boolean))) as string[];
+    const idsToRefresh = [codebuddyCnCurrent?.id].filter(Boolean) as string[];
     try {
       for (const id of idsToRefresh) {
         await useCodebuddyCnAccountStore.getState().refreshToken(id);
@@ -1016,7 +963,7 @@ export function DashboardPage({
   const handleRefreshQoderCard = async () => {
     if (cardRefreshing.qoder) return;
     setCardRefreshing((prev) => ({ ...prev, qoder: true }));
-    const idsToRefresh = [qoderCurrent?.id, qoderRecommended?.id].filter(Boolean) as string[];
+    const idsToRefresh = [qoderCurrent?.id].filter(Boolean) as string[];
     try {
       for (const id of idsToRefresh) {
         await useQoderAccountStore.getState().refreshToken(id);
@@ -1031,7 +978,7 @@ export function DashboardPage({
   const handleRefreshTraeCard = async () => {
     if (cardRefreshing.trae) return;
     setCardRefreshing((prev) => ({ ...prev, trae: true }));
-    const idsToRefresh = [traeCurrent?.id, traeRecommended?.id].filter(Boolean) as string[];
+    const idsToRefresh = [traeCurrent?.id].filter(Boolean) as string[];
     try {
       for (const id of idsToRefresh) {
         await useTraeAccountStore.getState().refreshToken(id);
@@ -1046,7 +993,7 @@ export function DashboardPage({
   const handleRefreshWorkbuddyCard = async () => {
     if (cardRefreshing.workbuddy) return;
     setCardRefreshing((prev) => ({ ...prev, workbuddy: true }));
-    const idsToRefresh = Array.from(new Set([workbuddyCurrent?.id, workbuddyRecommended?.id].filter(Boolean))) as string[];
+    const idsToRefresh = [workbuddyCurrent?.id].filter(Boolean) as string[];
     try {
       for (const id of idsToRefresh) {
         await useWorkbuddyAccountStore.getState().refreshToken(id);
@@ -1138,55 +1085,6 @@ export function DashboardPage({
     }
   };
 
-  // Antigravity Recommendation Logic
-  const agRecommended = useMemo(() => {
-    if (agAccounts.length <= 1) return null;
-    const currentId = agCurrentAccount?.id;
-
-    // Simple logic: find account with highest overall quota that isn't current
-    const others = agAccounts.filter((a) => {
-      if (a.id === currentId) return false;
-      if (a.disabled) return false;
-      if (a.quota?.is_forbidden) return false;
-      if (!a.quota?.models || a.quota.models.length === 0) return false;
-      return true;
-    });
-    if (others.length === 0) return null;
-
-    return others.reduce((prev, curr) => {
-      // Calculate a score based on quotas
-      const getScore = (acc: Account) => {
-        if (!acc.quota?.models) return -1;
-        // Average percentage of all models
-        const total = acc.quota.models.reduce((sum, m) => sum + m.percentage, 0);
-        return total / acc.quota.models.length;
-      };
-
-      return getScore(curr) > getScore(prev) ? curr : prev;
-    });
-  }, [agAccounts, agCurrentAccount?.id]);
-
-  // Codex Recommendation Logic
-  const codexRecommended = useMemo(() => {
-    if (codexAccounts.length <= 1) return null;
-    const currentId = codexCurrentAccount?.id;
-
-    const others = codexAccounts.filter((a) => {
-      if (a.id === currentId) return false;
-      if (!a.quota) return false;
-      return true;
-    });
-    if (others.length === 0) return null;
-
-    return others.reduce((prev, curr) => {
-      const getScore = (acc: CodexAccount) => {
-        if (!acc.quota) return -1;
-        return (acc.quota.hourly_percentage + acc.quota.weekly_percentage) / 2;
-      };
-      return getScore(curr) > getScore(prev) ? curr : prev;
-    });
-  }, [codexAccounts, codexCurrentAccount?.id]);
-
   const githubCopilotCurrent = useMemo(
     () => resolveDashboardCurrentAccount(githubCopilotAccounts, githubCopilotCurrentId),
     [githubCopilotAccounts, githubCopilotCurrentId],
@@ -1241,350 +1139,6 @@ export function DashboardPage({
     () => resolveDashboardCurrentAccount(zedAccounts, zedCurrentId),
     [zedAccounts, zedCurrentId],
   );
-
-  const githubCopilotRecommended = useMemo(() => {
-    if (githubCopilotAccounts.length <= 1) return null;
-    const currentId = githubCopilotCurrent?.id;
-    const others = githubCopilotAccounts.filter((a) => a.id !== currentId);
-    if (others.length === 0) return null;
-
-    const getScore = (acc: GitHubCopilotAccount) => {
-      const scores = [acc.quota?.hourly_percentage, acc.quota?.weekly_percentage].filter(
-        (value): value is number => typeof value === 'number',
-      );
-      if (scores.length === 0) return 101;
-      return scores.reduce((sum, value) => sum + value, 0) / scores.length;
-    };
-
-    return others.reduce((prev, curr) => (getScore(curr) < getScore(prev) ? curr : prev));
-  }, [githubCopilotAccounts, githubCopilotCurrent?.id]);
-
-  const windsurfRecommended = useMemo(() => {
-    if (windsurfAccounts.length <= 1) return null;
-    const currentId = windsurfCurrent?.id;
-    const others = windsurfAccounts.filter((account) => account.id !== currentId);
-    if (others.length === 0) return null;
-
-    const getScore = (account: WindsurfAccount) => {
-      const credits = getWindsurfCreditsSummary(account);
-      const promptLeft = toFiniteNumber(credits.promptCreditsLeft);
-      const addOnLeft = toFiniteNumber(credits.addOnCredits);
-
-      if (promptLeft != null) {
-        return promptLeft * 1000 + (addOnLeft ?? 0);
-      }
-
-      const quotaValues = [account.quota?.hourly_percentage, account.quota?.weekly_percentage].filter(
-        (value): value is number => typeof value === 'number',
-      );
-      if (quotaValues.length > 0) {
-        const avgUsed = quotaValues.reduce((sum, value) => sum + value, 0) / quotaValues.length;
-        return 100 - avgUsed;
-      }
-
-      return (account.last_used || account.created_at || 0) / 1e9;
-    };
-
-    return others.reduce((prev, curr) => (getScore(curr) > getScore(prev) ? curr : prev));
-  }, [windsurfAccounts, windsurfCurrent?.id]);
-
-  const kiroRecommended = useMemo(() => {
-    if (kiroAccounts.length <= 1) return null;
-    const currentId = kiroCurrent?.id;
-    const others = kiroAccounts.filter(
-      (account) => account.id !== currentId && !isKiroAccountBanned(account),
-    );
-    if (others.length === 0) return null;
-
-    const getScore = (account: KiroAccount) => {
-      const credits = getKiroCreditsSummary(account);
-      const promptLeft = toFiniteNumber(credits.promptCreditsLeft);
-      const addOnLeft = toFiniteNumber(credits.addOnCredits);
-
-      if (promptLeft != null) {
-        return promptLeft * 1000 + (addOnLeft ?? 0);
-      }
-
-      const quotaValues = [account.quota?.hourly_percentage, account.quota?.weekly_percentage].filter(
-        (value): value is number => typeof value === 'number',
-      );
-      if (quotaValues.length > 0) {
-        const avgUsed = quotaValues.reduce((sum, value) => sum + value, 0) / quotaValues.length;
-        return 100 - avgUsed;
-      }
-
-      return (account.last_used || account.created_at || 0) / 1e9;
-    };
-
-    return others.reduce((prev, curr) => (getScore(curr) > getScore(prev) ? curr : prev));
-  }, [kiroAccounts, kiroCurrent?.id]);
-
-  const cursorRecommended = useMemo(() => {
-    if (cursorAccounts.length <= 1) return null;
-    const currentId = cursorCurrent?.id;
-    const others = cursorAccounts.filter((a) => a.id !== currentId);
-    if (others.length === 0) return null;
-
-    const getScore = (account: CursorAccount) => {
-      const usage = getCursorUsage(account);
-      const planLimit = toFiniteNumber(usage.planLimitCents);
-      const planUsedRaw = toFiniteNumber(usage.planUsedCents);
-      const hasPlanBudget = planLimit != null && planLimit > 0;
-      const planUsed = planUsedRaw != null ? Math.max(planUsedRaw, 0) : null;
-      const remainingBudget = hasPlanBudget
-        ? Math.max((planLimit ?? 0) - (planUsed ?? 0), 0)
-        : -1;
-
-      const totalUsedPercent = toFiniteNumber(
-        usage.totalPercentUsed ??
-        (hasPlanBudget && planUsed != null && planLimit != null && planLimit > 0
-          ? (planUsed / planLimit) * 100
-          : null),
-      );
-      const usedPercentList = [
-        totalUsedPercent,
-        toFiniteNumber(usage.autoPercentUsed),
-        toFiniteNumber(usage.apiPercentUsed),
-      ].filter((value): value is number => value != null);
-      const avgUsedPercent = usedPercentList.length > 0
-        ? usedPercentList.reduce((sum, value) => sum + value, 0) / usedPercentList.length
-        : 101;
-
-      return {
-        hasPlanBudget,
-        remainingBudget,
-        avgUsedPercent,
-        freshness: account.last_used || account.created_at || 0,
-      };
-    };
-
-    return others.reduce((best, candidate) => {
-      const bestScore = getScore(best);
-      const candidateScore = getScore(candidate);
-
-      // 优先推荐有明确套餐额度（limit > 0）的账号，避免 0/0 FREE 抢占推荐位。
-      if (bestScore.hasPlanBudget !== candidateScore.hasPlanBudget) {
-        return candidateScore.hasPlanBudget ? candidate : best;
-      }
-
-      // 主排序：按剩余额度（limit - used）降序。
-      if (bestScore.remainingBudget !== candidateScore.remainingBudget) {
-        return candidateScore.remainingBudget > bestScore.remainingBudget
-          ? candidate
-          : best;
-      }
-
-      // 兜底：同剩余额度时，已用百分比更低优先；再按最近使用时间。
-      if (bestScore.avgUsedPercent !== candidateScore.avgUsedPercent) {
-        return candidateScore.avgUsedPercent < bestScore.avgUsedPercent
-          ? candidate
-          : best;
-      }
-
-      return candidateScore.freshness > bestScore.freshness ? candidate : best;
-    });
-  }, [cursorAccounts, cursorCurrent?.id]);
-
-  const geminiRecommended = useMemo(() => {
-    if (geminiAccounts.length <= 1) return null;
-    const currentId = geminiCurrent?.id;
-    const others = geminiAccounts.filter((a) => a.id !== currentId);
-    if (others.length === 0) return null;
-
-    const getScore = (account: GeminiAccount) => {
-      const tiers = getGeminiTierQuotaSummary(account);
-      const remainingValues = [tiers.pro.remainingPercent, tiers.flash.remainingPercent].filter(
-        (value): value is number => typeof value === 'number' && Number.isFinite(value),
-      );
-      const totalUsed = remainingValues.length > 0
-        ? 100 - Math.min(...remainingValues)
-        : null;
-      return {
-        remainingPercent: totalUsed == null ? -1 : 100 - totalUsed,
-        freshness: account.last_used || account.created_at || 0,
-      };
-    };
-
-    return others.reduce((best, candidate) => {
-      const bestScore = getScore(best);
-      const candidateScore = getScore(candidate);
-      if (candidateScore.remainingPercent !== bestScore.remainingPercent) {
-        return candidateScore.remainingPercent > bestScore.remainingPercent
-          ? candidate
-          : best;
-      }
-      return candidateScore.freshness > bestScore.freshness ? candidate : best;
-    });
-  }, [geminiAccounts, geminiCurrent?.id]);
-
-  const codebuddyRecommended = useMemo(() => {
-    if (codebuddyAccounts.length <= 1) return null;
-    const currentId = codebuddyCurrent?.id;
-    const others = codebuddyAccounts.filter((a) => a.id !== currentId);
-    if (others.length === 0) return null;
-
-    const getScore = (account: CodebuddyAccount) => {
-      const resource = getCodebuddyResourceSummary(account);
-      const extra = getCodebuddyExtraCreditSummary(account);
-      const remain = resource?.remainPercent ?? (extra.remainPercent ?? -1);
-      return {
-        remainPercent: remain,
-        freshness: account.last_used || account.created_at || 0,
-      };
-    };
-
-    return others.reduce((best, candidate) => {
-      const bestScore = getScore(best);
-      const candidateScore = getScore(candidate);
-      if (candidateScore.remainPercent !== bestScore.remainPercent) {
-        return candidateScore.remainPercent > bestScore.remainPercent ? candidate : best;
-      }
-      return candidateScore.freshness > bestScore.freshness ? candidate : best;
-    });
-  }, [codebuddyAccounts, codebuddyCurrent?.id]);
-
-
-  const codebuddyCnRecommended = useMemo(() => {
-    if (codebuddyCnAccounts.length <= 1) return null;
-    const currentId = codebuddyCnCurrent?.id;
-    const others = codebuddyCnAccounts.filter((a) => a.id !== currentId);
-    if (others.length === 0) return null;
-
-    const getScore = (account: CodebuddyAccount) => {
-      const model = getCodebuddyOfficialQuotaModel(account);
-      // 只使用基础包进行计算，不包含加量包
-      const baseResources = model.resources.filter(r => r.total > 0 || r.remain > 0);
-
-      // 计算平均剩余百分比（剩余越多越好）
-      let avgRemainPercent = -1;
-      if (baseResources.length > 0) {
-        const totalRemainPercent = baseResources.reduce((sum, r) => {
-          const pct = r.remainPercent ?? (r.total > 0 ? Math.max(0, (r.remain / r.total) * 100) : 0);
-          return sum + pct;
-        }, 0);
-        avgRemainPercent = totalRemainPercent / baseResources.length;
-      }
-
-      return {
-        remaining: avgRemainPercent, // 剩余百分比越高越好
-        freshness: account.last_used || account.created_at || 0,
-      };
-    };
-
-    return others.reduce((best, candidate) => {
-      const bestScore = getScore(best);
-      const candidateScore = getScore(candidate);
-      if (candidateScore.remaining !== bestScore.remaining) {
-        return candidateScore.remaining > bestScore.remaining ? candidate : best;
-      }
-      return candidateScore.freshness > bestScore.freshness ? candidate : best;
-    });
-  }, [codebuddyCnAccounts, codebuddyCnCurrent?.id]);
-
-  const qoderRecommended = useMemo(() => {
-    if (qoderAccounts.length <= 1) return null;
-    const currentId = qoderCurrent?.id;
-    const others = qoderAccounts.filter((a) => a.id !== currentId);
-    if (others.length === 0) return null;
-
-    const getScore = (account: QoderAccount) => {
-      const sub = getQoderSubscriptionInfo(account);
-      const usedPercent = sub.totalUsagePercentage ?? sub.userQuota.percentage ?? 101;
-      return {
-        remaining: 100 - usedPercent,
-        freshness: account.last_used || account.created_at || 0,
-      };
-    };
-
-    return others.reduce((best, candidate) => {
-      const bestScore = getScore(best);
-      const candidateScore = getScore(candidate);
-      if (candidateScore.remaining !== bestScore.remaining) {
-        return candidateScore.remaining > bestScore.remaining ? candidate : best;
-      }
-      return candidateScore.freshness > bestScore.freshness ? candidate : best;
-    });
-  }, [qoderAccounts, qoderCurrent?.id]);
-
-  const traeRecommended = useMemo(() => {
-    if (traeAccounts.length <= 1) return null;
-    const currentId = traeCurrent?.id;
-    const others = traeAccounts.filter((a) => a.id !== currentId);
-    if (others.length === 0) return null;
-
-    const getScore = (account: TraeAccount) => {
-      const usage = getTraeUsage(account);
-      const usedPercent = usage.usedPercent ?? 101;
-      return {
-        remaining: 100 - usedPercent,
-        freshness: account.last_used || account.created_at || 0,
-      };
-    };
-
-    return others.reduce((best, candidate) => {
-      const bestScore = getScore(best);
-      const candidateScore = getScore(candidate);
-      if (candidateScore.remaining !== bestScore.remaining) {
-        return candidateScore.remaining > bestScore.remaining ? candidate : best;
-      }
-      return candidateScore.freshness > bestScore.freshness ? candidate : best;
-    });
-  }, [traeAccounts, traeCurrent?.id]);
-
-  const workbuddyRecommended = useMemo(() => {
-    if (workbuddyAccounts.length <= 1) return null;
-    const currentId = workbuddyCurrent?.id;
-    const others = workbuddyAccounts.filter((a) => a.id !== currentId);
-    if (others.length === 0) return null;
-
-    const getScore = (account: WorkbuddyAccount) => {
-      const model = getWorkbuddyOfficialQuotaModel(account);
-      // 只使用基础包进行计算，不包含加量包
-      const baseResources = model.resources.filter(r => r.total > 0 || r.remain > 0);
-
-      // 计算平均剩余百分比（剩余越多越好）
-      let avgRemainPercent = -1;
-      if (baseResources.length > 0) {
-        const totalRemainPercent = baseResources.reduce((sum, r) => {
-          const pct = r.remainPercent ?? (r.total > 0 ? Math.max(0, (r.remain / r.total) * 100) : 0);
-          return sum + pct;
-        }, 0);
-        avgRemainPercent = totalRemainPercent / baseResources.length;
-      }
-
-      return {
-        remaining: avgRemainPercent, // 剩余百分比越高越好
-        freshness: account.last_used || account.created_at || 0,
-      };
-    };
-
-    return others.reduce((best, candidate) => {
-      const bestScore = getScore(best);
-      const candidateScore = getScore(candidate);
-      if (candidateScore.remaining !== bestScore.remaining) {
-        return candidateScore.remaining > bestScore.remaining ? candidate : best;
-      }
-      return candidateScore.freshness > bestScore.freshness ? candidate : best;
-    });
-  }, [workbuddyAccounts, workbuddyCurrent?.id]);
-
-  const zedRecommended = useMemo(() => {
-    if (zedAccounts.length <= 1) return null;
-    const currentId = zedCurrent?.id;
-    const others = zedAccounts.filter((account) => account.id !== currentId);
-    if (others.length === 0) return null;
-
-    return others.reduce((best, candidate) => {
-      const bestScore = getZedRecommendationScore(best);
-      const candidateScore = getZedRecommendationScore(candidate);
-      if (candidateScore.remainingPercent !== bestScore.remainingPercent) {
-        return candidateScore.remainingPercent > bestScore.remainingPercent
-          ? candidate
-          : best;
-      }
-      return candidateScore.freshness > bestScore.freshness ? candidate : best;
-    });
-  }, [zedAccounts, zedCurrent?.id]);
 
   // Render Helpers
   const formatQuotaValue = (value: number) => {
@@ -2067,6 +1621,15 @@ export function DashboardPage({
     </button>
   );
 
+  const renderCurrentAccountSection = (content: React.ReactNode) => (
+    <div className="split-content">
+      <div className="split-half current-half">
+        <span className="half-label"><CheckCircle2 size={12} /> {t('dashboard.current', '当前账户')}</span>
+        {content}
+      </div>
+    </div>
+  );
+
   const renderPlatformCard = (platformId: PlatformId) => {
     if (platformId === 'antigravity') {
       return (
@@ -2090,23 +1653,7 @@ export function DashboardPage({
             </div>
           </div>
 
-          <div className="split-content">
-            <div className="split-half current-half">
-              <span className="half-label"><CheckCircle2 size={12} /> {t('dashboard.current', '当前账户')}</span>
-              {renderAgAccountContent(agCurrentAccount)}
-            </div>
-
-            <div className="split-divider"></div>
-
-            <div className="split-half recommend-half">
-              <span className="half-label"><Sparkles size={12} /> {t('dashboard.recommended', '推荐账号')}</span>
-              {agRecommended ? (
-                renderAgAccountContent(agRecommended)
-              ) : (
-                <div className="empty-slot-text">{t('dashboard.noRecommendation', '暂无更好推荐')}</div>
-              )}
-            </div>
-          </div>
+          {renderCurrentAccountSection(renderAgAccountContent(agCurrentAccount))}
 
           <button className="card-footer-action" onClick={() => onNavigate('overview')}>
             {t('dashboard.viewAllAccounts', '查看所有账号')}
@@ -2137,23 +1684,7 @@ export function DashboardPage({
             </div>
           </div>
 
-          <div className="split-content">
-            <div className="split-half current-half">
-              <span className="half-label"><CheckCircle2 size={12} /> {t('dashboard.current', '当前账户')}</span>
-              {renderCodexAccountContent(codexCurrentAccount)}
-            </div>
-
-            <div className="split-divider"></div>
-
-            <div className="split-half recommend-half">
-              <span className="half-label"><Sparkles size={12} /> {t('dashboard.recommended', '推荐账号')}</span>
-              {codexRecommended ? (
-                renderCodexAccountContent(codexRecommended)
-              ) : (
-                <div className="empty-slot-text">{t('dashboard.noRecommendation', '暂无更好推荐')}</div>
-              )}
-            </div>
-          </div>
+          {renderCurrentAccountSection(renderCodexAccountContent(codexCurrentAccount))}
 
           <button className="card-footer-action" onClick={() => onNavigate('codex')}>
             {t('dashboard.viewAllAccounts', '查看所有账号')}
@@ -2184,23 +1715,7 @@ export function DashboardPage({
             </div>
           </div>
 
-          <div className="split-content">
-            <div className="split-half current-half">
-              <span className="half-label"><CheckCircle2 size={12} /> {t('dashboard.current', '当前账户')}</span>
-              {renderZedAccountContent(zedCurrent)}
-            </div>
-
-            <div className="split-divider"></div>
-
-            <div className="split-half recommend-half">
-              <span className="half-label"><Sparkles size={12} /> {t('dashboard.recommended', '推荐账号')}</span>
-              {zedRecommended ? (
-                renderZedAccountContent(zedRecommended)
-              ) : (
-                <div className="empty-slot-text">{t('dashboard.noRecommendation', '暂无更好推荐')}</div>
-              )}
-            </div>
-          </div>
+          {renderCurrentAccountSection(renderZedAccountContent(zedCurrent))}
 
           <button className="card-footer-action" onClick={() => onNavigate('zed')}>
             {t('dashboard.viewAllAccounts', '查看所有账号')}
@@ -2231,23 +1746,7 @@ export function DashboardPage({
             </div>
           </div>
 
-          <div className="split-content">
-            <div className="split-half current-half">
-              <span className="half-label"><CheckCircle2 size={12} /> {t('dashboard.current', '当前账户')}</span>
-              {renderGitHubCopilotAccountContent(githubCopilotCurrent)}
-            </div>
-
-            <div className="split-divider"></div>
-
-            <div className="split-half recommend-half">
-              <span className="half-label"><Sparkles size={12} /> {t('dashboard.recommended', '推荐账号')}</span>
-              {githubCopilotRecommended ? (
-                renderGitHubCopilotAccountContent(githubCopilotRecommended)
-              ) : (
-                <div className="empty-slot-text">{t('dashboard.noRecommendation', '暂无更好推荐')}</div>
-              )}
-            </div>
-          </div>
+          {renderCurrentAccountSection(renderGitHubCopilotAccountContent(githubCopilotCurrent))}
 
           <button className="card-footer-action" onClick={() => onNavigate('github-copilot')}>
             {t('dashboard.viewAllAccounts', '查看所有账号')}
@@ -2278,23 +1777,7 @@ export function DashboardPage({
             </div>
           </div>
 
-          <div className="split-content">
-            <div className="split-half current-half">
-              <span className="half-label"><CheckCircle2 size={12} /> {t('dashboard.current', '当前账户')}</span>
-              {renderWindsurfAccountContent(windsurfCurrent)}
-            </div>
-
-            <div className="split-divider"></div>
-
-            <div className="split-half recommend-half">
-              <span className="half-label"><Sparkles size={12} /> {t('dashboard.recommended', '推荐账号')}</span>
-              {windsurfRecommended ? (
-                renderWindsurfAccountContent(windsurfRecommended)
-              ) : (
-                <div className="empty-slot-text">{t('dashboard.noRecommendation', '暂无更好推荐')}</div>
-              )}
-            </div>
-          </div>
+          {renderCurrentAccountSection(renderWindsurfAccountContent(windsurfCurrent))}
 
           <button className="card-footer-action" onClick={() => onNavigate('windsurf')}>
             {t('dashboard.viewAllAccounts', '查看所有账号')}
@@ -2325,23 +1808,7 @@ export function DashboardPage({
             </div>
           </div>
 
-          <div className="split-content">
-            <div className="split-half current-half">
-              <span className="half-label"><CheckCircle2 size={12} /> {t('dashboard.current', '当前账户')}</span>
-              {renderKiroAccountContent(kiroCurrent)}
-            </div>
-
-            <div className="split-divider"></div>
-
-            <div className="split-half recommend-half">
-              <span className="half-label"><Sparkles size={12} /> {t('dashboard.recommended', '推荐账号')}</span>
-              {kiroRecommended ? (
-                renderKiroAccountContent(kiroRecommended)
-              ) : (
-                <div className="empty-slot-text">{t('dashboard.noRecommendation', '暂无更好推荐')}</div>
-              )}
-            </div>
-          </div>
+          {renderCurrentAccountSection(renderKiroAccountContent(kiroCurrent))}
 
           <button className="card-footer-action" onClick={() => onNavigate('kiro')}>
             {t('dashboard.viewAllAccounts', '查看所有账号')}
@@ -2372,23 +1839,7 @@ export function DashboardPage({
             </div>
           </div>
 
-          <div className="split-content">
-            <div className="split-half current-half">
-              <span className="half-label"><CheckCircle2 size={12} /> {t('dashboard.current', '当前账户')}</span>
-              {renderCursorAccountContent(cursorCurrent)}
-            </div>
-
-            <div className="split-divider"></div>
-
-            <div className="split-half recommend-half">
-              <span className="half-label"><Sparkles size={12} /> {t('dashboard.recommended', '推荐账号')}</span>
-              {cursorRecommended ? (
-                renderCursorAccountContent(cursorRecommended)
-              ) : (
-                <div className="empty-slot-text">{t('dashboard.noRecommendation', '暂无更好推荐')}</div>
-              )}
-            </div>
-          </div>
+          {renderCurrentAccountSection(renderCursorAccountContent(cursorCurrent))}
 
           <button className="card-footer-action" onClick={() => onNavigate('cursor')}>
             {t('dashboard.viewAllAccounts', '查看所有账号')}
@@ -2419,23 +1870,7 @@ export function DashboardPage({
             </div>
           </div>
 
-          <div className="split-content">
-            <div className="split-half current-half">
-              <span className="half-label"><CheckCircle2 size={12} /> {t('dashboard.current', '当前账户')}</span>
-              {renderGeminiAccountContent(geminiCurrent)}
-            </div>
-
-            <div className="split-divider"></div>
-
-            <div className="split-half recommend-half">
-              <span className="half-label"><Sparkles size={12} /> {t('dashboard.recommended', '推荐账号')}</span>
-              {geminiRecommended ? (
-                renderGeminiAccountContent(geminiRecommended)
-              ) : (
-                <div className="empty-slot-text">{t('dashboard.noRecommendation', '暂无更好推荐')}</div>
-              )}
-            </div>
-          </div>
+          {renderCurrentAccountSection(renderGeminiAccountContent(geminiCurrent))}
 
           <button className="card-footer-action" onClick={() => onNavigate('gemini')}>
             {t('dashboard.viewAllAccounts', '查看所有账号')}
@@ -2466,23 +1901,7 @@ export function DashboardPage({
             </div>
           </div>
 
-          <div className="split-content">
-            <div className="split-half current-half">
-              <span className="half-label"><CheckCircle2 size={12} /> {t('dashboard.current', '当前账户')}</span>
-              {renderCodebuddyAccountContent(codebuddyCurrent)}
-            </div>
-
-            <div className="split-divider"></div>
-
-            <div className="split-half recommend-half">
-              <span className="half-label"><Sparkles size={12} /> {t('dashboard.recommended', '推荐账号')}</span>
-              {codebuddyRecommended ? (
-                renderCodebuddyAccountContent(codebuddyRecommended)
-              ) : (
-                <div className="empty-slot-text">{t('dashboard.noRecommendation', '暂无更好推荐')}</div>
-              )}
-            </div>
-          </div>
+          {renderCurrentAccountSection(renderCodebuddyAccountContent(codebuddyCurrent))}
 
           <button className="card-footer-action" onClick={() => onNavigate('codebuddy')}>
             {t('dashboard.viewAllAccounts', '查看所有账号')}
@@ -2513,23 +1932,7 @@ export function DashboardPage({
             </div>
           </div>
 
-          <div className="split-content">
-            <div className="split-half current-half">
-              <span className="half-label"><CheckCircle2 size={12} /> {t('dashboard.current', '当前账户')}</span>
-              {renderCodebuddyCnAccountContent(codebuddyCnCurrent)}
-            </div>
-
-            <div className="split-divider"></div>
-
-            <div className="split-half recommend-half">
-              <span className="half-label"><Sparkles size={12} /> {t('dashboard.recommended', '推荐账号')}</span>
-              {codebuddyCnRecommended ? (
-                renderCodebuddyCnAccountContent(codebuddyCnRecommended)
-              ) : (
-                <div className="empty-slot-text">{t('dashboard.noRecommendation', '暂无更好推荐')}</div>
-              )}
-            </div>
-          </div>
+          {renderCurrentAccountSection(renderCodebuddyCnAccountContent(codebuddyCnCurrent))}
 
           <button className="card-footer-action" onClick={() => onNavigate('codebuddy-cn')}>
             {t('dashboard.viewAllAccounts', '查看所有账号')}
@@ -2560,23 +1963,7 @@ export function DashboardPage({
             </div>
           </div>
 
-          <div className="split-content">
-            <div className="split-half current-half">
-              <span className="half-label"><CheckCircle2 size={12} /> {t('dashboard.current', '当前账户')}</span>
-              {renderQoderAccountContent(qoderCurrent)}
-            </div>
-
-            <div className="split-divider"></div>
-
-            <div className="split-half recommend-half">
-              <span className="half-label"><Sparkles size={12} /> {t('dashboard.recommended', '推荐账号')}</span>
-              {qoderRecommended ? (
-                renderQoderAccountContent(qoderRecommended)
-              ) : (
-                <div className="empty-slot-text">{t('dashboard.noRecommendation', '暂无更好推荐')}</div>
-              )}
-            </div>
-          </div>
+          {renderCurrentAccountSection(renderQoderAccountContent(qoderCurrent))}
 
           <button className="card-footer-action" onClick={() => onNavigate('qoder')}>
             {t('dashboard.viewAllAccounts', '查看所有账号')}
@@ -2607,23 +1994,7 @@ export function DashboardPage({
             </div>
           </div>
 
-          <div className="split-content">
-            <div className="split-half current-half">
-              <span className="half-label"><CheckCircle2 size={12} /> {t('dashboard.current', '当前账户')}</span>
-              {renderTraeAccountContent(traeCurrent)}
-            </div>
-
-            <div className="split-divider"></div>
-
-            <div className="split-half recommend-half">
-              <span className="half-label"><Sparkles size={12} /> {t('dashboard.recommended', '推荐账号')}</span>
-              {traeRecommended ? (
-                renderTraeAccountContent(traeRecommended)
-              ) : (
-                <div className="empty-slot-text">{t('dashboard.noRecommendation', '暂无更好推荐')}</div>
-              )}
-            </div>
-          </div>
+          {renderCurrentAccountSection(renderTraeAccountContent(traeCurrent))}
 
           <button className="card-footer-action" onClick={() => onNavigate('trae')}>
             {t('dashboard.viewAllAccounts', '查看所有账号')}
@@ -2666,23 +2037,7 @@ export function DashboardPage({
             </div>
           </div>
 
-          <div className="split-content">
-            <div className="split-half current-half">
-              <span className="half-label"><CheckCircle2 size={12} /> {t('dashboard.current', '当前账户')}</span>
-              {renderWorkbuddyAccountContent(workbuddyCurrent)}
-            </div>
-
-            <div className="split-divider"></div>
-
-            <div className="split-half recommend-half">
-              <span className="half-label"><Sparkles size={12} /> {t('dashboard.recommended', '推荐账号')}</span>
-              {workbuddyRecommended ? (
-                renderWorkbuddyAccountContent(workbuddyRecommended)
-              ) : (
-                <div className="empty-slot-text">{t('dashboard.noRecommendation', '暂无更好推荐')}</div>
-              )}
-            </div>
-          </div>
+          {renderCurrentAccountSection(renderWorkbuddyAccountContent(workbuddyCurrent))}
 
           <button className="card-footer-action" onClick={() => onNavigate('workbuddy')}>
             {t('dashboard.viewAllAccounts', '查看所有账号')}
@@ -2704,19 +2059,9 @@ export function DashboardPage({
           </div>
         </div>
 
-        <div className="split-content">
-          <div className="split-half current-half">
-            <span className="half-label"><CheckCircle2 size={12} /> {t('dashboard.current', '当前账户')}</span>
-            <div className="empty-slot-text">{t('dashboard.noData', '暂无数据')}</div>
-          </div>
-
-          <div className="split-divider"></div>
-
-          <div className="split-half recommend-half">
-            <span className="half-label"><Sparkles size={12} /> {t('dashboard.recommended', '推荐账号')}</span>
-            <div className="empty-slot-text">{t('dashboard.noRecommendation', '暂无更好推荐')}</div>
-          </div>
-        </div>
+        {renderCurrentAccountSection(
+          <div className="empty-slot-text">{t('dashboard.noData', '暂无数据')}</div>,
+        )}
 
         <button className="card-footer-action" onClick={() => onNavigate(PLATFORM_PAGE_MAP[platformId])}>
           {t('dashboard.viewAllAccounts', '查看所有账号')}
@@ -2732,7 +2077,6 @@ export function DashboardPage({
           <span>{t('nav.dashboard', '仪表盘')}</span>
           <ManualHelpIconButton className="header-action-btn dashboard-manual-btn dashboard-title-manual-btn" />
         </div>
-        {topCenterBanner}
         <div className="dashboard-top-actions">
           <button className="header-action-btn" onClick={onOpenPlatformLayout}>
             <span>{t('platformLayout.title', '平台布局')}</span>

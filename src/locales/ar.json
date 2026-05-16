@@ -242,6 +242,8 @@
       "pin": "تثبيت",
       "unpin": "إلغاء التثبيت",
       "close": "إغلاق",
+      "compact": "العرض المضغوط",
+      "exitCompact": "الخروج من العرض المضغوط",
       "previousAccount": "الحساب السابق",
       "nextAccount": "الحساب التالي",
       "viewRecommended": "عرض الحساب الموصى به",

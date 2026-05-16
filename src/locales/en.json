@@ -243,6 +243,8 @@
       "pin": "Pin",
       "unpin": "Unpin",
       "close": "Close",
+      "compact": "Compact view",
+      "exitCompact": "Exit compact view",
       "previousAccount": "Previous account",
       "nextAccount": "Next account",
       "viewRecommended": "View recommended account",

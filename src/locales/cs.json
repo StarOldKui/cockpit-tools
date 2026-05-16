@@ -3763,6 +3763,8 @@
       "pin": "Připnout",
       "unpin": "Odepnout",
       "close": "Zavřít",
+      "compact": "Kompaktní zobrazení",
+      "exitCompact": "Ukončit kompaktní zobrazení",
       "previousAccount": "Předchozí účet",
       "nextAccount": "Další účet",
       "viewRecommended": "Zobrazit doporučený účet",

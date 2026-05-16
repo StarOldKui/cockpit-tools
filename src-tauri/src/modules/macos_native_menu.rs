@@ -30,6 +30,7 @@ mod imp {
         back_to_current: String,
         switch_to_viewed: String,
         refresh: String,
+        show_floating_card: String,
         open_cockpit_tools: String,
         open_details: String,
         view_all_accounts: String,
@@ -384,6 +385,11 @@ mod imp {
                 &[],
             ),
             refresh: modules::i18n::translate(lang, "common.refresh", &[]),
+            show_floating_card: modules::i18n::translate(
+                lang,
+                "settings.general.floatingCardShowNowAction",
+                &[],
+            ),
             open_cockpit_tools: modules::i18n::translate(
                 lang,
                 "floatingCard.actions.openCockpitTools",
@@ -468,6 +474,11 @@ mod imp {
             }
             "open_cockpit_tools" => {
                 open_main_window();
+            }
+            "show_floating_card" => {
+                if let Some(app) = crate::get_app_handle() {
+                    let _ = modules::floating_card_window::show_floating_card_window(&app, true);
+                }
             }
             "settings" => {
                 open_main_window_page("settings");

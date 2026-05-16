@@ -243,6 +243,8 @@
       "pin": "置顶",
       "unpin": "取消置顶",
       "close": "关闭",
+      "compact": "紧凑视图",
+      "exitCompact": "退出紧凑视图",
       "previousAccount": "上一个账号",
       "nextAccount": "下一个账号",
       "viewRecommended": "查看推荐账号",

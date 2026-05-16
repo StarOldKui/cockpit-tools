@@ -342,20 +342,6 @@
   position: relative;
 }
 
-.split-half.recommend-half {
-  background: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.02) 100%);
-}
-
-[data-theme="dark"] .split-half.recommend-half {
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.02) 100%);
-}
-
-.split-divider {
-  width: 1px;
-  background: var(--border-light);
-  align-self: stretch;
-}
-
 .half-label {
   font-size: 11px;
   font-weight: 700;

@@ -3763,6 +3763,8 @@
       "pin": "Sabitle",
       "unpin": "Sabitlemeyi kaldır",
       "close": "Kapat",
+      "compact": "Kompakt görünüm",
+      "exitCompact": "Kompakt görünümden çık",
       "previousAccount": "Önceki hesap",
       "nextAccount": "Sonraki hesap",
       "viewRecommended": "Önerilen hesabı görüntüle",

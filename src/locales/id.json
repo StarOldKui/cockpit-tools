@@ -243,6 +243,8 @@
       "pin": "Sematkan",
       "unpin": "Lepas Sematan",
       "close": "Tutup",
+      "compact": "Tampilan ringkas",
+      "exitCompact": "Keluar dari tampilan ringkas",
       "previousAccount": "Akun sebelumnya",
       "nextAccount": "Akun berikutnya",
       "viewRecommended": "Lihat akun yang direkomendasikan",

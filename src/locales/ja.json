@@ -3763,6 +3763,8 @@
       "pin": "固定",
       "unpin": "固定解除",
       "close": "閉じる",
+      "compact": "コンパクト表示",
+      "exitCompact": "コンパクト表示を終了",
       "previousAccount": "前のアカウント",
       "nextAccount": "次のアカウント",
       "viewRecommended": "おすすめアカウントを表示",

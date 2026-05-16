@@ -3763,6 +3763,8 @@
       "pin": "고정",
       "unpin": "고정 해제",
       "close": "닫기",
+      "compact": "컴팩트 보기",
+      "exitCompact": "컴팩트 보기 종료",
       "previousAccount": "이전 계정",
       "nextAccount": "다음 계정",
       "viewRecommended": "추천 계정 보기",

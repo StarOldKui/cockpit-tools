@@ -114,6 +114,9 @@ final class NativeMenuPopoverController: NSObject, ObservableObject, NSMenuDeleg
         case .openCockpitTools:
             self.closeMenu()
             dispatchRustMenuAction(action: "open_cockpit_tools")
+        case .showFloatingCard:
+            self.closeMenu()
+            dispatchRustMenuAction(action: "show_floating_card")
         case .settings:
             self.closeMenu()
             dispatchRustMenuAction(action: "settings")
@@ -174,6 +177,10 @@ final class NativeMenuPopoverController: NSObject, ObservableObject, NSMenuDeleg
 
     @objc private func handleOpenCockpitTools(_: Any?) {
         self.dispatch(action: .openCockpitTools)
+    }
+
+    @objc private func handleShowFloatingCard(_: Any?) {
+        self.dispatch(action: .showFloatingCard)
     }
 
     @objc private func handleViewAllAccounts(_: Any?) {
@@ -286,6 +293,12 @@ final class NativeMenuPopoverController: NSObject, ObservableObject, NSMenuDeleg
             menu.addItem(.separator())
         }
         menu.addItem(self.makeActionMenuItem(
+            title: snapshot.strings.show_floating_card,
+            systemName: "pip",
+            action: #selector(self.handleShowFloatingCard(_:)),
+            bundledIconName: "picture-in-picture-2"
+        ))
+        menu.addItem(self.makeActionMenuItem(
             title: snapshot.strings.open_cockpit_tools,
             systemName: "macwindow",
             action: #selector(self.handleOpenCockpitTools(_:))
@@ -361,15 +374,33 @@ final class NativeMenuPopoverController: NSObject, ObservableObject, NSMenuDeleg
         return item
     }
 
-    private func makeActionMenuItem(title: String, systemName: String, action: Selector) -> NSMenuItem {
+    private func makeActionMenuItem(
+        title: String,
+        systemName: String,
+        action: Selector,
+        bundledIconName: String? = nil
+    ) -> NSMenuItem {
         let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
         item.target = self
-        if let image = NSImage(systemSymbolName: systemName, accessibilityDescription: nil) {
+        if let image = bundledIconName.flatMap({ self.makeBundledMenuIcon(name: $0) })
+            ?? NSImage(systemSymbolName: systemName, accessibilityDescription: nil) {
             image.isTemplate = true
             image.size = NSSize(width: 16, height: 16)
             item.image = image
         }
         return item
+    }
+
+    private func makeBundledMenuIcon(name: String) -> NSImage? {
+        guard let url = Bundle.main.url(
+            forResource: name,
+            withExtension: "svg",
+            subdirectory: "native-menu-icons"
+        ),
+        let image = NSImage(contentsOf: url) else {
+            return nil
+        }
+        return image
     }
 
     private func beginRefresh(platformId: String, accountId: String?) {
@@ -431,6 +462,7 @@ enum NativeRustAction {
     case openDetails
     case viewAllAccounts
     case openCockpitTools
+    case showFloatingCard
     case settings
     case quit
 }

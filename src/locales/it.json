@@ -3763,6 +3763,8 @@
       "pin": "Fissa",
       "unpin": "Rimuovi fissaggio",
       "close": "Chiudi",
+      "compact": "Vista compatta",
+      "exitCompact": "Esci dalla vista compatta",
       "previousAccount": "Account precedente",
       "nextAccount": "Account successivo",
       "viewRecommended": "Visualizza account consigliato",

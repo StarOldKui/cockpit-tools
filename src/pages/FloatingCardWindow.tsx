@@ -1,5 +1,5 @@
 import { type MouseEvent as ReactMouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, ExternalLink, Pin, PinOff, RefreshCw, Star, Undo2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink, Maximize2, Minimize2, Pin, PinOff, RefreshCw, Star, Undo2, X } from 'lucide-react';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { LogicalSize } from '@tauri-apps/api/dpi';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -94,7 +94,10 @@ const FLOATING_CARD_WINDOW_LABEL = 'floating-card';
 const INSTANCE_FLOATING_CARD_WINDOW_LABEL_PREFIX = 'instance-floating-card-';
 const FLOATING_CARD_PLATFORM_STORAGE_KEY = 'agtools.floating_card.platform';
 const DEFAULT_INSTANCE_ID = '__default__';
+const FLOATING_CARD_WIDTH = 300;
 const FLOATING_CARD_BASE_HEIGHT = 290;
+const FLOATING_CARD_COMPACT_MIN_HEIGHT = 96;
+const FLOATING_CARD_COMPACT_ERROR_HEIGHT = 140;
 const FLOATING_CARD_MAX_HEIGHT = 520;
 const FLOATING_CARD_NO_DRAG_SELECTOR =
   'button, select, input, textarea, a, option, [role="button"], [data-floating-card-no-drag="true"]';
@@ -260,6 +263,7 @@ export function FloatingCardWindow() {
   const [refreshingAccountId, setRefreshingAccountId] = useState<string | null>(null);
   const [errorText, setErrorText] = useState<string | null>(null);
   const [platformLoading, setPlatformLoading] = useState(false);
+  const [compactViewEnabled, setCompactViewEnabled] = useState(false);
 
   const platformOrder = useMemo(() => {
     const seen = new Set<PlatformId>();
@@ -934,6 +938,16 @@ export function FloatingCardWindow() {
   const floatingCardTitle = instanceContext?.instanceName || t('instances.defaultName', '默认实例');
   const platformLabel = getPlatformLabel(selectedPlatform, t);
   const platformLocked = Boolean(instanceContext);
+  const compactViewAvailable = isInstanceFloatingCardWindow
+    ? instanceContext?.platformId === 'codex'
+    : selectedPlatform === 'codex';
+  const compactViewActive = compactViewAvailable && compactViewEnabled && Boolean(viewedAccount && presentation);
+
+  useEffect(() => {
+    if (!compactViewAvailable && compactViewEnabled) {
+      setCompactViewEnabled(false);
+    }
+  }, [compactViewAvailable, compactViewEnabled]);
 
   const selectAccount = useCallback((platformId: PlatformId, accountId: string | null) => {
     setViewedAccountIds((prev) => ({ ...prev, [platformId]: accountId }));
@@ -1222,22 +1236,33 @@ export function FloatingCardWindow() {
     let cancelled = false;
     const frameId = window.requestAnimationFrame(() => {
       if (cancelled) return;
-      const contentHeight = Math.max(
-        shell.scrollHeight,
-        document.documentElement.scrollHeight,
-        document.body.scrollHeight,
-      );
-      const targetHeight = Math.max(
-        FLOATING_CARD_BASE_HEIGHT,
-        Math.min(FLOATING_CARD_MAX_HEIGHT, Math.ceil(contentHeight)),
-      );
-      if (Math.abs(targetHeight - window.innerHeight) <= 2) {
-        return;
-      }
+      const minHeight = compactViewActive && !closeConfirmOpen
+        ? FLOATING_CARD_COMPACT_MIN_HEIGHT
+        : FLOATING_CARD_BASE_HEIGHT;
+      const contentHeight = compactViewActive && !closeConfirmOpen
+        ? errorText ? FLOATING_CARD_COMPACT_ERROR_HEIGHT : FLOATING_CARD_COMPACT_MIN_HEIGHT
+        : Math.max(
+            shell.scrollHeight,
+            document.documentElement.scrollHeight,
+            document.body.scrollHeight,
+          );
+      const targetHeight = Math.max(minHeight, Math.min(FLOATING_CARD_MAX_HEIGHT, Math.ceil(contentHeight)));
 
-      void windowInstance
-        .setSize(new LogicalSize(window.innerWidth, targetHeight))
-        .catch((error) => console.error('Failed to resize floating card window:', error));
+      void (async () => {
+        await windowInstance.setResizable(true);
+        try {
+          await windowInstance.setMinSize(new LogicalSize(FLOATING_CARD_WIDTH, minHeight));
+          if (
+            compactViewActive ||
+            Math.abs(FLOATING_CARD_WIDTH - window.innerWidth) > 2 ||
+            Math.abs(targetHeight - window.innerHeight) > 2
+          ) {
+            await windowInstance.setSize(new LogicalSize(FLOATING_CARD_WIDTH, targetHeight));
+          }
+        } finally {
+          await windowInstance.setResizable(false);
+        }
+      })().catch((error) => console.error('Failed to resize floating card window:', error));
     });
 
     return () => {
@@ -1252,6 +1277,8 @@ export function FloatingCardWindow() {
     isCurrentViewed,
     platformLoading,
     presentation,
+    closeConfirmOpen,
+    compactViewActive,
     recommendedAccount?.id,
     refreshingAccountId,
     selectedPlatform,
@@ -1261,248 +1288,342 @@ export function FloatingCardWindow() {
 
   return (
     <div className="floating-card-window">
-      <div className="floating-card-shell" ref={shellRef} onMouseDown={handleWindowDragStart}>
-        <div className="floating-card-header">
-          <div className="floating-card-header-main">
-            <span className="floating-card-platform-icon">{renderPlatformIcon(selectedPlatform, 18)}</span>
-            <div className="floating-card-header-title">{floatingCardTitle}</div>
-          </div>
-
-          <div className="floating-card-header-actions">
-            <button
-              className="floating-card-icon-button"
-              type="button"
-              onClick={() => void handleTogglePin()}
-              title={alwaysOnTop ? t('floatingCard.actions.unpin', '取消置顶') : t('floatingCard.actions.pin', '置顶')}
-              aria-label={alwaysOnTop ? t('floatingCard.actions.unpin', '取消置顶') : t('floatingCard.actions.pin', '置顶')}
-            >
-              {alwaysOnTop ? <PinOff size={15} /> : <Pin size={15} />}
-            </button>
-            <button
-              className="floating-card-icon-button"
-              type="button"
-              onClick={() => void requestCloseWindow()}
-              title={t('floatingCard.actions.close', '关闭')}
-              aria-label={t('floatingCard.actions.close', '关闭')}
-            >
-              <X size={15} />
-            </button>
-          </div>
-        </div>
-
-        <div className="floating-card-body">
-          <div className="floating-card-hud-strip">
-            <div className="floating-card-platform-slot">
-              {platformLocked ? (
-                <div
-                  className="floating-card-platform-lock"
-                  title={platformLabel}
-                  aria-label={t('floatingCard.lockedPlatform', '实例已锁定平台')}
+      <div
+        className={`floating-card-shell${compactViewActive ? ' floating-card-shell--compact' : ''}`}
+        ref={shellRef}
+        onMouseDown={handleWindowDragStart}
+      >
+        {compactViewActive && viewedAccount && presentation ? (
+          <div className="floating-card-compact-view">
+            <div className="floating-card-compact-bar floating-card-compact-main-bar">
+              <span className="floating-card-platform-icon">{renderPlatformIcon(selectedPlatform, 16)}</span>
+              <div className="floating-card-compact-account" title={maskAccountText(presentation.displayName)}>
+                {maskAccountText(presentation.displayName)}
+              </div>
+              <div className="floating-card-compact-actions">
+                <button
+                  className="floating-card-icon-button"
+                  type="button"
+                  onClick={() => setCompactViewEnabled(false)}
+                  title={t('floatingCard.actions.exitCompact', 'Exit compact view')}
+                  aria-label={t('floatingCard.actions.exitCompact', 'Exit compact view')}
                 >
-                  {platformLabel}
-                </div>
+                  <Maximize2 size={15} />
+                </button>
+                <button
+                  className="floating-card-icon-button"
+                  type="button"
+                  onClick={() => void handleTogglePin()}
+                  title={alwaysOnTop ? t('floatingCard.actions.unpin', '取消置顶') : t('floatingCard.actions.pin', '置顶')}
+                  aria-label={alwaysOnTop ? t('floatingCard.actions.unpin', '取消置顶') : t('floatingCard.actions.pin', '置顶')}
+                >
+                  {alwaysOnTop ? <PinOff size={15} /> : <Pin size={15} />}
+                </button>
+                <button
+                  className="floating-card-icon-button"
+                  type="button"
+                  onClick={() => void requestCloseWindow()}
+                  title={t('floatingCard.actions.close', '关闭')}
+                  aria-label={t('floatingCard.actions.close', '关闭')}
+                >
+                  <X size={15} />
+                </button>
+              </div>
+            </div>
+
+            <div className="floating-card-compact-bar floating-card-compact-quota-bar">
+              {visibleQuotaItems.length > 0 ? (
+                visibleQuotaItems.map((item) => {
+                  const progressPercent = Math.max(
+                    0,
+                    Math.min(100, item.progressPercent ?? item.percentage ?? 0),
+                  );
+                  return (
+                    <div key={item.key} className="floating-card-compact-quota-item">
+                      <div className="floating-card-compact-quota-top">
+                        <span className="floating-card-quota-label">{item.label}</span>
+                        <span className={`floating-card-quota-value floating-card-quota-value--${item.quotaClass || 'high'}`}>
+                          {item.valueText || '--'}
+                        </span>
+                      </div>
+                      {item.showProgress !== false ? (
+                        <div className="floating-card-progress-track">
+                          <div
+                            className={`floating-card-progress-bar floating-card-progress-bar--${item.quotaClass || 'high'}`}
+                            style={{ width: `${progressPercent}%` }}
+                          />
+                        </div>
+                      ) : null}
+                      {item.resetText ? (
+                        <div className="floating-card-quota-reset">{item.resetText}</div>
+                      ) : null}
+                    </div>
+                  );
+                })
               ) : (
-                <select
-                  className="floating-card-platform-select"
-                  value={selectedPlatform}
-                  onChange={(event) => setSelectedPlatform(event.target.value as PlatformId)}
-                  aria-label={t('floatingCard.selectPlatform', '切换平台')}
-                >
-                  {platformOrder.map((platformId) => (
-                    <option key={platformId} value={platformId}>
-                      {getPlatformLabel(platformId, t)}
-                    </option>
-                  ))}
-                </select>
+                <div className="floating-card-empty-text">
+                  {t('common.shared.quota.noData', '暂无配额数据')}
+                </div>
               )}
             </div>
+            {errorText ? <div className="floating-card-error" title={errorText}>{errorText}</div> : null}
+          </div>
+        ) : (
+          <>
+            <div className="floating-card-header">
+              <div className="floating-card-header-main">
+                <span className="floating-card-platform-icon">{renderPlatformIcon(selectedPlatform, 18)}</span>
+                <div className="floating-card-header-title">{floatingCardTitle}</div>
+              </div>
 
-            <div className="floating-card-pager">
-              <button
-                className="floating-card-nav-button"
-                type="button"
-                onClick={() => handleMoveAccount(-1)}
-                disabled={accountIndex < 0 || accounts.length <= 1}
-                aria-label={t('floatingCard.actions.previousAccount', '上一个账号')}
-              >
-                <ChevronLeft size={15} />
-              </button>
-              <span className="floating-card-pager-text">
-                {accounts.length > 0
-                  ? t('floatingCard.pager', {
-                      current: Math.max(1, accountIndex + 1),
-                      total: accounts.length,
-                      defaultValue: '{{current}} / {{total}}',
-                    })
-                  : '-- / --'}
-              </span>
-              <button
-                className="floating-card-nav-button"
-                type="button"
-                onClick={() => handleMoveAccount(1)}
-                disabled={accountIndex < 0 || accounts.length <= 1}
-                aria-label={t('floatingCard.actions.nextAccount', '下一个账号')}
-              >
-                <ChevronRight size={15} />
-              </button>
+              <div className="floating-card-header-actions">
+                {compactViewAvailable ? (
+                  <button
+                    className="floating-card-icon-button"
+                    type="button"
+                    onClick={() => setCompactViewEnabled(true)}
+                    title={t('floatingCard.actions.compact', 'Compact view')}
+                    aria-label={t('floatingCard.actions.compact', 'Compact view')}
+                  >
+                    <Minimize2 size={15} />
+                  </button>
+                ) : null}
+                <button
+                  className="floating-card-icon-button"
+                  type="button"
+                  onClick={() => void handleTogglePin()}
+                  title={alwaysOnTop ? t('floatingCard.actions.unpin', '取消置顶') : t('floatingCard.actions.pin', '置顶')}
+                  aria-label={alwaysOnTop ? t('floatingCard.actions.unpin', '取消置顶') : t('floatingCard.actions.pin', '置顶')}
+                >
+                  {alwaysOnTop ? <PinOff size={15} /> : <Pin size={15} />}
+                </button>
+                <button
+                  className="floating-card-icon-button"
+                  type="button"
+                  onClick={() => void requestCloseWindow()}
+                  title={t('floatingCard.actions.close', '关闭')}
+                  aria-label={t('floatingCard.actions.close', '关闭')}
+                >
+                  <X size={15} />
+                </button>
+              </div>
             </div>
 
-            {accountStateLabel ? (
-              <div className="floating-card-state-strip">
-                <span className="floating-card-state-pill">{accountStateLabel}</span>
-              </div>
-            ) : null}
-          </div>
-
-          {viewedAccount && presentation ? (
-            <div className="floating-card-account">
-              <div className="floating-card-account-head">
-                <div className="floating-card-account-title">
-                  <div className="floating-card-account-name">
-                    {maskAccountText(presentation.displayName)}
-                  </div>
-                  {presentation.cycleText ? (
-                    <div className="floating-card-account-subline">
-                      <span className="floating-card-section-label">
-                        {t('floatingCard.cycle', '周期')}
-                      </span>
-                      <span className="floating-card-inline-value">{presentation.cycleText}</span>
-                    </div>
-                  ) : null}
-                </div>
-                <span className={`floating-card-plan floating-card-plan--${presentation.planClass || 'unknown'}`}>
-                  {presentation.planLabel || '--'}
-                </span>
-              </div>
-
-              <div className="floating-card-inline-meta">
-                {presentation.sublineText ? (
-                  <div className="floating-card-meta-pill">
-                    <span className="floating-card-section-label">
-                      {t('floatingCard.status', '状态')}
-                    </span>
-                    <span
-                      className={`floating-card-inline-value floating-card-inline-value--${presentation.sublineClass || 'neutral'}`}
+            <div className="floating-card-body">
+              <div className="floating-card-hud-strip">
+                <div className="floating-card-platform-slot">
+                  {platformLocked ? (
+                    <div
+                      className="floating-card-platform-lock"
+                      title={platformLabel}
+                      aria-label={t('floatingCard.lockedPlatform', '实例已锁定平台')}
                     >
-                      {presentation.sublineText}
+                      {platformLabel}
+                    </div>
+                  ) : (
+                    <select
+                      className="floating-card-platform-select"
+                      value={selectedPlatform}
+                      onChange={(event) => setSelectedPlatform(event.target.value as PlatformId)}
+                      aria-label={t('floatingCard.selectPlatform', '切换平台')}
+                    >
+                      {platformOrder.map((platformId) => (
+                        <option key={platformId} value={platformId}>
+                          {getPlatformLabel(platformId, t)}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <div className="floating-card-pager">
+                  <button
+                    className="floating-card-nav-button"
+                    type="button"
+                    onClick={() => handleMoveAccount(-1)}
+                    disabled={accountIndex < 0 || accounts.length <= 1}
+                    aria-label={t('floatingCard.actions.previousAccount', '上一个账号')}
+                  >
+                    <ChevronLeft size={15} />
+                  </button>
+                  <span className="floating-card-pager-text">
+                    {accounts.length > 0
+                      ? t('floatingCard.pager', {
+                          current: Math.max(1, accountIndex + 1),
+                          total: accounts.length,
+                          defaultValue: '{{current}} / {{total}}',
+                        })
+                      : '-- / --'}
+                  </span>
+                  <button
+                    className="floating-card-nav-button"
+                    type="button"
+                    onClick={() => handleMoveAccount(1)}
+                    disabled={accountIndex < 0 || accounts.length <= 1}
+                    aria-label={t('floatingCard.actions.nextAccount', '下一个账号')}
+                  >
+                    <ChevronRight size={15} />
+                  </button>
+                </div>
+
+                {accountStateLabel ? (
+                  <div className="floating-card-state-strip">
+                    <span className="floating-card-state-pill">{accountStateLabel}</span>
+                  </div>
+                ) : null}
+              </div>
+
+              {viewedAccount && presentation ? (
+                <div className="floating-card-account">
+                  <div className="floating-card-account-head">
+                    <div className="floating-card-account-title">
+                      <div className="floating-card-account-name">
+                        {maskAccountText(presentation.displayName)}
+                      </div>
+                      {presentation.cycleText ? (
+                        <div className="floating-card-account-subline">
+                          <span className="floating-card-section-label">
+                            {t('floatingCard.cycle', '周期')}
+                          </span>
+                          <span className="floating-card-inline-value">{presentation.cycleText}</span>
+                        </div>
+                      ) : null}
+                    </div>
+                    <span className={`floating-card-plan floating-card-plan--${presentation.planClass || 'unknown'}`}>
+                      {presentation.planLabel || '--'}
                     </span>
                   </div>
-                ) : null}
-              </div>
 
-              <div className="floating-card-quota-panel">
-                {visibleQuotaItems.length > 0 ? (
-                  visibleQuotaItems.map((item) => {
-                    const progressPercent = Math.max(
-                      0,
-                      Math.min(100, item.progressPercent ?? item.percentage ?? 0),
-                    );
-                    return (
-                      <div key={item.key} className="floating-card-quota-row">
-                        <div className="floating-card-quota-top">
-                          <span className="floating-card-quota-label">{item.label}</span>
-                          <span className={`floating-card-quota-value floating-card-quota-value--${item.quotaClass || 'high'}`}>
-                            {item.valueText || '--'}
-                          </span>
-                        </div>
-                        {item.showProgress !== false ? (
-                          <div className="floating-card-progress-track">
-                            <div
-                              className={`floating-card-progress-bar floating-card-progress-bar--${item.quotaClass || 'high'}`}
-                              style={{ width: `${progressPercent}%` }}
-                            />
-                          </div>
-                        ) : null}
-                        {item.resetText ? (
-                          <div className="floating-card-quota-reset">{item.resetText}</div>
-                        ) : null}
+                  <div className="floating-card-inline-meta">
+                    {presentation.sublineText ? (
+                      <div className="floating-card-meta-pill">
+                        <span className="floating-card-section-label">
+                          {t('floatingCard.status', '状态')}
+                        </span>
+                        <span
+                          className={`floating-card-inline-value floating-card-inline-value--${presentation.sublineClass || 'neutral'}`}
+                        >
+                          {presentation.sublineText}
+                        </span>
                       </div>
-                    );
-                  })
-                ) : (
-                  <div className="floating-card-empty-text">
-                    {t('common.shared.quota.noData', '暂无配额数据')}
+                    ) : null}
                   </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="floating-card-empty-state">
-              <div className="floating-card-section-label">
-                {platformLoading ? t('common.loading', '加载中...') : t('floatingCard.empty.title', '暂无账号')}
-              </div>
-              <div className="floating-card-empty-text">
-                {platformLoading
-                  ? t('floatingCard.empty.loading', '正在读取当前平台账号信息')
-                  : t('floatingCard.empty.desc', '当前平台还没有可展示的账号')}
-              </div>
-            </div>
-          )}
 
-          {errorText ? <div className="floating-card-error">{errorText}</div> : null}
-        </div>
+                  <div className="floating-card-quota-panel">
+                    {visibleQuotaItems.length > 0 ? (
+                      visibleQuotaItems.map((item) => {
+                        const progressPercent = Math.max(
+                          0,
+                          Math.min(100, item.progressPercent ?? item.percentage ?? 0),
+                        );
+                        return (
+                          <div key={item.key} className="floating-card-quota-row">
+                            <div className="floating-card-quota-top">
+                              <span className="floating-card-quota-label">{item.label}</span>
+                              <span className={`floating-card-quota-value floating-card-quota-value--${item.quotaClass || 'high'}`}>
+                                {item.valueText || '--'}
+                              </span>
+                            </div>
+                            {item.showProgress !== false ? (
+                              <div className="floating-card-progress-track">
+                                <div
+                                  className={`floating-card-progress-bar floating-card-progress-bar--${item.quotaClass || 'high'}`}
+                                  style={{ width: `${progressPercent}%` }}
+                                />
+                              </div>
+                            ) : null}
+                            {item.resetText ? (
+                              <div className="floating-card-quota-reset">{item.resetText}</div>
+                            ) : null}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="floating-card-empty-text">
+                        {t('common.shared.quota.noData', '暂无配额数据')}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="floating-card-empty-state">
+                  <div className="floating-card-section-label">
+                    {platformLoading ? t('common.loading', '加载中...') : t('floatingCard.empty.title', '暂无账号')}
+                  </div>
+                  <div className="floating-card-empty-text">
+                    {platformLoading
+                      ? t('floatingCard.empty.loading', '正在读取当前平台账号信息')
+                      : t('floatingCard.empty.desc', '当前平台还没有可展示的账号')}
+                  </div>
+                </div>
+              )}
 
-        <div className="floating-card-footer">
-          <div className="floating-card-primary-actions">
-            {isCurrentViewed &&
-            recommendedAccount &&
-            recommendedAccount.id !== currentAccount?.id ? (
-              <button
-                className="floating-card-button floating-card-button--secondary"
-                type="button"
-                onClick={() => selectAccount(selectedPlatform, recommendedAccount.id)}
-              >
-                <Star size={14} />
-                {t('floatingCard.actions.viewRecommended', '查看推荐账号')}
-              </button>
-            ) : null}
-            {!isCurrentViewed && currentAccount ? (
-              <button
-                className="floating-card-button floating-card-button--secondary"
-                type="button"
-                onClick={() => selectAccount(selectedPlatform, currentAccount.id)}
-              >
-                <Undo2 size={14} />
-                {t('floatingCard.actions.backToCurrent', '回到当前账号')}
-              </button>
-            ) : null}
-            {!isCurrentViewed && viewedAccount ? (
-              <button
-                className="floating-card-button floating-card-button--primary"
-                type="button"
-                onClick={() => void handleSwitch()}
-                disabled={switchingAccountId === viewedAccount.id}
-              >
-                {switchingAccountId === viewedAccount.id ? (
-                  <RefreshCw size={14} className="floating-card-spin" />
+              {errorText ? <div className="floating-card-error">{errorText}</div> : null}
+            </div>
+
+            <div className="floating-card-footer">
+              <div className="floating-card-primary-actions">
+                {isCurrentViewed &&
+                recommendedAccount &&
+                recommendedAccount.id !== currentAccount?.id ? (
+                  <button
+                    className="floating-card-button floating-card-button--secondary"
+                    type="button"
+                    onClick={() => selectAccount(selectedPlatform, recommendedAccount.id)}
+                  >
+                    <Star size={14} />
+                    {t('floatingCard.actions.viewRecommended', '查看推荐账号')}
+                  </button>
                 ) : null}
-                {t('floatingCard.actions.switchToThisAccount', '切换到此账号')}
-              </button>
-            ) : null}
-          </div>
+                {!isCurrentViewed && currentAccount ? (
+                  <button
+                    className="floating-card-button floating-card-button--secondary"
+                    type="button"
+                    onClick={() => selectAccount(selectedPlatform, currentAccount.id)}
+                  >
+                    <Undo2 size={14} />
+                    {t('floatingCard.actions.backToCurrent', '回到当前账号')}
+                  </button>
+                ) : null}
+                {!isCurrentViewed && viewedAccount ? (
+                  <button
+                    className="floating-card-button floating-card-button--primary"
+                    type="button"
+                    onClick={() => void handleSwitch()}
+                    disabled={switchingAccountId === viewedAccount.id}
+                  >
+                    {switchingAccountId === viewedAccount.id ? (
+                      <RefreshCw size={14} className="floating-card-spin" />
+                    ) : null}
+                    {t('floatingCard.actions.switchToThisAccount', '切换到此账号')}
+                  </button>
+                ) : null}
+              </div>
 
-          <div className="floating-card-secondary-actions">
-            <button
-              className="floating-card-button floating-card-button--ghost floating-card-button--icon"
-              type="button"
-              onClick={() => void handleRefresh()}
-              disabled={!viewedAccount || Boolean(refreshingAccountId)}
-              title={t('common.refresh', '刷新')}
-              aria-label={t('common.refresh', '刷新')}
-            >
-              <RefreshCw size={14} className={refreshingAccountId ? 'floating-card-spin' : undefined} />
-            </button>
-            <button
-              className="floating-card-button floating-card-button--ghost floating-card-button--icon"
-              type="button"
-              onClick={() => void handleOpenDetails()}
-              title={t('floatingCard.actions.openDetails', '打开详情页')}
-              aria-label={t('floatingCard.actions.openDetails', '打开详情页')}
-            >
-              <ExternalLink size={14} />
-            </button>
-          </div>
-        </div>
+              <div className="floating-card-secondary-actions">
+                <button
+                  className="floating-card-button floating-card-button--ghost floating-card-button--icon"
+                  type="button"
+                  onClick={() => void handleRefresh()}
+                  disabled={!viewedAccount || Boolean(refreshingAccountId)}
+                  title={t('common.refresh', '刷新')}
+                  aria-label={t('common.refresh', '刷新')}
+                >
+                  <RefreshCw size={14} className={refreshingAccountId ? 'floating-card-spin' : undefined} />
+                </button>
+                <button
+                  className="floating-card-button floating-card-button--ghost floating-card-button--icon"
+                  type="button"
+                  onClick={() => void handleOpenDetails()}
+                  title={t('floatingCard.actions.openDetails', '打开详情页')}
+                  aria-label={t('floatingCard.actions.openDetails', '打开详情页')}
+                >
+                  <ExternalLink size={14} />
+                </button>
+              </div>
+            </div>
+          </>
+        )}
 
         {closeConfirmOpen ? (
           <div className="floating-card-close-confirm-backdrop" data-floating-card-no-drag="true">

@@ -3763,6 +3763,8 @@
       "pin": "Ghim",
       "unpin": "Bỏ ghim",
       "close": "Đóng",
+      "compact": "Chế độ xem gọn",
+      "exitCompact": "Thoát chế độ xem gọn",
       "previousAccount": "Tài khoản trước",
       "nextAccount": "Tài khoản tiếp theo",
       "viewRecommended": "Xem tài khoản đề xuất",
