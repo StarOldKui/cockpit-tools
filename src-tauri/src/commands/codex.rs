@@ -1,6 +1,5 @@
 use crate::models::codex::{
-    CodexAccount, CodexApiProviderMode, CodexAppSpeed, CodexAppSpeedConfig, CodexQuickConfig,
-    CodexQuota, CodexTokens,
+    CodexAccount, CodexApiProviderMode, CodexQuickConfig, CodexQuota, CodexTokens,
 };
 use crate::models::codex_local_access::{
     CodexLocalAccessPortCleanupResult, CodexLocalAccessRoutingStrategy, CodexLocalAccessScope,
@@ -8,8 +7,7 @@ use crate::models::codex_local_access::{
 };
 use crate::modules::{
     codex_account, codex_local_access, codex_oauth, codex_quota, codex_session_visibility,
-    codex_speed, codex_wakeup, codex_wakeup_scheduler, config, logger, openclaw_auth,
-    opencode_auth, process,
+    codex_wakeup, codex_wakeup_scheduler, config, logger, openclaw_auth, opencode_auth, process,
 };
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::AppHandle;
@@ -186,55 +184,6 @@ pub fn save_codex_quick_config(
     codex_account::save_current_quick_config(model_context_window, auto_compact_token_limit)
 }
 
-#[tauri::command]
-pub fn get_codex_app_speed_config() -> Result<CodexAppSpeedConfig, String> {
-    codex_speed::get_app_speed_config()
-}
-
-#[tauri::command]
-pub fn save_codex_app_speed(speed: CodexAppSpeed) -> Result<CodexAppSpeedConfig, String> {
-    codex_speed::save_api_service_app_speed(speed)
-}
-
-#[tauri::command]
-pub fn get_codex_api_service_app_speed_config() -> Result<CodexAppSpeedConfig, String> {
-    codex_speed::get_api_service_app_speed_config()
-}
-
-#[tauri::command]
-pub fn save_codex_api_service_app_speed(
-    speed: CodexAppSpeed,
-) -> Result<CodexAppSpeedConfig, String> {
-    let saved = codex_speed::save_api_service_app_speed(speed.clone())?;
-    if let Ok(settings) = crate::modules::codex_instance::load_default_settings() {
-        if settings.bind_account_id.as_deref()
-            == Some(crate::modules::codex_instance::CODEX_API_SERVICE_BIND_ACCOUNT_ID)
-        {
-            let _ = crate::modules::codex_instance::update_default_app_speed(speed);
-        }
-    }
-    Ok(saved)
-}
-
-#[tauri::command]
-pub fn update_codex_account_app_speed(
-    account_id: String,
-    speed: CodexAppSpeed,
-) -> Result<CodexAccount, String> {
-    let account = codex_account::update_account_app_speed(&account_id, speed)?;
-    let current_account_id = codex_account::load_account_index().current_account_id;
-    let default_bind_account_id = crate::modules::codex_instance::load_default_settings()
-        .ok()
-        .and_then(|settings| settings.bind_account_id);
-    if current_account_id.as_deref() == Some(account_id.as_str())
-        || default_bind_account_id.as_deref() == Some(account_id.as_str())
-    {
-        codex_speed::write_official_app_speed(account.app_speed.clone())?;
-        let _ = crate::modules::codex_instance::update_default_app_speed(account.app_speed.clone());
-    }
-    Ok(account)
-}
-
 /// 刷新账号资料（团队名/结构）
 #[tauri::command]
 pub async fn refresh_codex_account_profile(account_id: String) -> Result<CodexAccount, String> {
@@ -251,8 +200,6 @@ pub async fn switch_codex_account(
     // 切换账号（写入 auth.json）
     let account = codex_account::switch_account_managed(&account_id).await?;
     let next_history_provider = read_default_codex_history_provider_for_switch();
-    let account_speed = account.app_speed.clone();
-    codex_speed::write_official_app_speed(account_speed.clone())?;
 
     // 同步更新 Codex 默认实例的绑定账号（不同步到 Antigravity，因为账号体系不同）
     if let Err(e) = crate::modules::codex_instance::update_default_settings(
@@ -267,9 +214,6 @@ pub async fn switch_codex_account(
             "已同步更新 Codex 默认实例绑定账号: {}",
             account_id
         ));
-    }
-    if let Err(e) = crate::modules::codex_instance::update_default_app_speed(account_speed) {
-        logger::log_warn(&format!("更新 Codex 默认实例速度失败: {}", e));
     }
 
     let user_config = config::get_user_config();
@@ -971,8 +915,6 @@ pub async fn codex_local_access_activate(app: AppHandle) -> Result<CodexLocalAcc
     let codex_home = codex_account::get_codex_home();
     let state = codex_local_access::activate_local_access_for_dir(&codex_home).await?;
     let next_history_provider = read_default_codex_history_provider_for_switch();
-    let api_service_speed = codex_speed::get_api_service_app_speed_config()?.speed;
-    codex_speed::write_official_app_speed(api_service_speed.clone())?;
 
     let mut index = codex_account::load_account_index();
     index.current_account_id = None;
@@ -989,9 +931,6 @@ pub async fn codex_local_access_activate(app: AppHandle) -> Result<CodexLocalAcc
         logger::log_warn(&format!("更新 Codex 默认实例为 API 服务模式失败: {}", e));
     } else {
         logger::log_info("已同步更新 Codex 默认实例为 API 服务模式");
-    }
-    if let Err(e) = crate::modules::codex_instance::update_default_app_speed(api_service_speed) {
-        logger::log_warn(&format!("更新 Codex 默认实例 API 服务速度失败: {}", e));
     }
 
     let user_config = config::get_user_config();

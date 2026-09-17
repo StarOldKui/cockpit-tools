@@ -88,7 +88,6 @@ import {
   formatCodexLoginProvider,
   getCodexAuthMetadata,
   getCodexPlanFilterKey,
-  getCodexSubscriptionPresentation,
   hasCodexAccountName,
   isCodexApiKeyAccount,
   isCodexExplicitFreePlanType,
@@ -114,7 +113,6 @@ import { CodexInstancesContent } from "./CodexInstancesPage";
 import { CodexSessionManager } from "../components/codex/CodexSessionManager";
 import { CodexWakeupContent } from "../components/codex/CodexWakeupContent";
 import { CodexModelProviderManager } from "../components/codex/CodexModelProviderManager";
-import { CodexSpeedSelect } from "../components/codex/CodexSpeedSelect";
 import { QuickSettingsPopover } from "../components/QuickSettingsPopover";
 import { useProviderAccountsPage } from "../hooks/useProviderAccountsPage";
 import {
@@ -127,7 +125,7 @@ import {
   type SingleSelectFilterOption,
 } from "../components/SingleSelectFilterDropdown";
 import { SingleSelectDropdown } from "../components/SingleSelectDropdown";
-import type { CodexAccount, CodexAppSpeed } from "../types/codex";
+import type { CodexAccount } from "../types/codex";
 import type {
   CodexLocalAccessAddressKind,
   CodexLocalAccessRoutingStrategy,
@@ -698,9 +696,6 @@ export function CodexAccountsPage() {
   >(null);
   const [editingAccountNoteValue, setEditingAccountNoteValue] = useState("");
   const [savingAccountNote, setSavingAccountNote] = useState(false);
-  const [savingAppSpeedId, setSavingAppSpeedId] = useState<string | null>(null);
-  const [apiServiceAppSpeed, setApiServiceAppSpeed] =
-    useState<CodexAppSpeed>("standard");
   const {
     message: accountNoteError,
     scrollKey: accountNoteErrorScrollKey,
@@ -1522,7 +1517,6 @@ export function CodexAccountsPage() {
     updateAccountName,
     updateApiKeyCredentials,
     updateApiKeyBoundOAuthAccount,
-    updateAccountAppSpeed,
   } = store;
   const localAccessCollection = localAccessState?.collection ?? null;
 
@@ -1547,85 +1541,6 @@ export function CodexAccountsPage() {
     setEditingAccountNoteValue("");
     setAccountNoteError(null);
   }, [savingAccountNote, setAccountNoteError]);
-
-  const loadApiServiceAppSpeed = useCallback(async () => {
-    try {
-      const config = await codexService.getCodexApiServiceAppSpeedConfig();
-      setApiServiceAppSpeed(config.speed);
-    } catch (error) {
-      console.warn("加载 Codex API 服务速度失败:", error);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadApiServiceAppSpeed();
-  }, [loadApiServiceAppSpeed]);
-
-  const handleAccountAppSpeedChange = useCallback(
-    async (account: CodexAccount, speed: CodexAppSpeed) => {
-      if (savingAppSpeedId) return;
-      setSavingAppSpeedId(account.id);
-      try {
-        await updateAccountAppSpeed(account.id, speed);
-        setMessage({
-          text: t("codex.speed.saveSuccess", "速度已更新"),
-        });
-      } catch (error) {
-        setMessage({
-          text: t("codex.speed.saveFailed", {
-            defaultValue: "保存速度失败：{{error}}",
-            error: String(error),
-          }),
-          tone: "error",
-        });
-      } finally {
-        setSavingAppSpeedId(null);
-      }
-    },
-    [savingAppSpeedId, setMessage, t, updateAccountAppSpeed],
-  );
-
-  const handleApiServiceAppSpeedChange = useCallback(
-    async (speed: CodexAppSpeed) => {
-      if (savingAppSpeedId) return;
-      const previousSpeed = apiServiceAppSpeed;
-      setApiServiceAppSpeed(speed);
-      setSavingAppSpeedId(CODEX_API_SERVICE_BIND_ID);
-      try {
-        const saved = await codexService.saveCodexApiServiceAppSpeed(speed);
-        setApiServiceAppSpeed(saved.speed);
-        setMessage({
-          text: t("codex.speed.saveSuccess", "速度已更新"),
-        });
-      } catch (error) {
-        setApiServiceAppSpeed(previousSpeed);
-        setMessage({
-          text: t("codex.speed.saveFailed", {
-            defaultValue: "保存速度失败：{{error}}",
-            error: String(error),
-          }),
-          tone: "error",
-        });
-      } finally {
-        setSavingAppSpeedId(null);
-      }
-    },
-    [apiServiceAppSpeed, savingAppSpeedId, setMessage, t],
-  );
-
-  const renderAccountSpeedSelect = useCallback(
-    (account: CodexAccount, compact = false) => (
-      <CodexSpeedSelect
-        value={account.app_speed ?? "standard"}
-        onChange={(speed) => handleAccountAppSpeedChange(account, speed)}
-        busy={savingAppSpeedId === account.id}
-        compact={compact}
-        preferredPlacement="top"
-        ariaLabel={t("codex.speed.title", "速度")}
-      />
-    ),
-    [handleAccountAppSpeedChange, savingAppSpeedId, t],
-  );
 
   const handleSubmitAccountNote = useCallback(async () => {
     if (!editingAccountNoteId || savingAccountNote) return;
@@ -4016,12 +3931,6 @@ export function CodexAccountsPage() {
     [accountPresentations, t],
   );
 
-  const resolveSubscriptionPresentation = useCallback(
-    (account: CodexAccount) =>
-      getCodexSubscriptionPresentation(account.subscription_active_until, t),
-    [t],
-  );
-
   const resolveSingleExportBaseName = useCallback(
     (account: CodexAccount) => {
       const display = (
@@ -5164,18 +5073,6 @@ export function CodexAccountsPage() {
         if (bR == null) return -1;
         return sortDirection === "desc" ? bR - aR : aR - bR;
       }
-      if (sortBy === "subscription_expiry") {
-        const aR = isCodexApiKeyAccount(a)
-          ? null
-          : resolveSubscriptionPresentation(a).timestampMs;
-        const bR = isCodexApiKeyAccount(b)
-          ? null
-          : resolveSubscriptionPresentation(b).timestampMs;
-        if (aR == null && bR == null) return 0;
-        if (aR == null) return 1;
-        if (bR == null) return -1;
-        return sortDirection === "desc" ? bR - aR : aR - bR;
-      }
       const aV =
         sortBy === "weekly"
           ? (a.quota?.weekly_percentage ?? -1)
@@ -5189,7 +5086,6 @@ export function CodexAccountsPage() {
     [
       customSortOrderIndex,
       overviewCurrentAccountId,
-      resolveSubscriptionPresentation,
       sortBy,
       sortDirection,
     ],
@@ -5481,11 +5377,7 @@ export function CodexAccountsPage() {
       const presentation = resolvePresentation(account);
       const isCurrent = overviewCurrentAccountId === account.id;
       const isSelected = selected.has(account.id);
-      const isApiKeyAccount = isCodexApiKeyAccount(account);
       const compactQuotaItems = resolveCompactQuotaItems(presentation);
-      const subscriptionInfo = resolveSubscriptionPresentation(account);
-      const showCompactExpiry =
-        !isApiKeyAccount && subscriptionInfo.bucket !== "active";
       return (
         <div
           key={groupKey ? `${groupKey}-${account.id}` : account.id}
@@ -5519,16 +5411,7 @@ export function CodexAccountsPage() {
                 </span>
               </span>
             ))}
-            {showCompactExpiry && (
-              <span
-                className={`codex-compact-expiry ${subscriptionInfo.tone}`}
-                title={subscriptionInfo.titleText}
-              >
-                {subscriptionInfo.valueText}
-              </span>
-            )}
           </div>
-          {renderAccountSpeedSelect(account, true)}
           <button
             className={`codex-compact-note-btn ${account.account_note?.trim() ? "has-note" : ""}`}
             onClick={() => openAccountNoteModal(account)}
@@ -5620,8 +5503,6 @@ export function CodexAccountsPage() {
       const visibleTags = accountTags.slice(0, 2);
       const moreTagCount = Math.max(0, accountTags.length - visibleTags.length);
       const isInLocalAccess = localAccessAccountIdSet.has(account.id);
-      const subscriptionInfo = resolveSubscriptionPresentation(account);
-      const isSubscriptionInfoMissing = subscriptionInfo.bucket === "missing";
       return (
         <div
           key={groupKey ? `${groupKey}-${account.id}` : account.id}
@@ -5827,32 +5708,8 @@ export function CodexAccountsPage() {
               </>
             )}
           </div>
-          {!isApiKeyAccount && (
-            <div
-              className={`codex-subscription-footer ${subscriptionInfo.tone}`}
-              title={subscriptionInfo.titleText}
-            >
-              <div className="codex-subscription-footer-main">
-                <Calendar size={14} />
-                {isSubscriptionInfoMissing ? (
-                  <strong>{subscriptionInfo.valueText}</strong>
-                ) : (
-                  <>
-                    <span>{t("codex.subscription.label", "有效期")}</span>
-                    <strong>{subscriptionInfo.valueText}</strong>
-                  </>
-                )}
-              </div>
-              {subscriptionInfo.timestampMs != null && (
-                <span className="codex-subscription-footer-date">
-                  {subscriptionInfo.detailText}
-                </span>
-              )}
-            </div>
-          )}
           <div className="codex-card-bottom">
             <span className="card-date">{formatDate(account.created_at)}</span>
-            {renderAccountSpeedSelect(account)}
             <div className="card-footer">
               <div className="card-actions">
                 <button
@@ -6412,13 +6269,6 @@ export function CodexAccountsPage() {
                   defaultValue: "监听范围：{{scope}}",
                 })}
               </span>
-              <CodexSpeedSelect
-                value={apiServiceAppSpeed}
-                onChange={handleApiServiceAppSpeedChange}
-                busy={savingAppSpeedId === CODEX_API_SERVICE_BIND_ID}
-                preferredPlacement="top"
-                ariaLabel={t("codex.speed.title", "速度")}
-              />
               <div className="card-footer codex-local-access-footer">
                 <div className="card-actions">
                   <button
@@ -6681,7 +6531,6 @@ export function CodexAccountsPage() {
       const apiBaseUrlText = (account.api_base_url || "").trim() || "-";
       const apiBaseUrlLine = `${t("codex.api.baseUrl", "Base URL")}：${apiBaseUrlText}`;
       const isInLocalAccess = localAccessAccountIdSet.has(account.id);
-      const subscriptionInfo = resolveSubscriptionPresentation(account);
       return (
         <tr
           key={groupKey ? `${groupKey}-${account.id}` : account.id}
@@ -6732,7 +6581,6 @@ export function CodexAccountsPage() {
                     {t("codex.current", "当前")}
                   </span>
                 )}
-                {renderAccountSpeedSelect(account, true)}
               </div>
               {(meta.accountContextText ||
                 isInLocalAccess ||
@@ -6817,38 +6665,6 @@ export function CodexAccountsPage() {
             <span className={`tier-badge ${planClass}`}>
               {presentation.planLabel}
             </span>
-          </td>
-          <td>
-            {isApiKeyAccount ? (
-              isNewApiAccount ? (
-                <div
-                  className="codex-subscription-table-cell"
-                  title={presentation.planLabel}
-                >
-                  <span className="codex-subscription-badge new-api-exclusive">
-                    {presentation.planLabel}
-                  </span>
-                </div>
-              ) : (
-                <span className="codex-subscription-table-empty">-</span>
-              )
-            ) : (
-              <div
-                className="codex-subscription-table-cell"
-                title={subscriptionInfo.titleText}
-              >
-                <span
-                  className={`codex-subscription-badge ${subscriptionInfo.tone}`}
-                >
-                  {subscriptionInfo.valueText}
-                </span>
-                {subscriptionInfo.timestampMs != null && (
-                  <span className="codex-subscription-date">
-                    {subscriptionInfo.detailText}
-                  </span>
-                )}
-              </div>
-            )}
           </td>
           <td>
             {isApiKeyAccount && !isNewApiAccount ? (
@@ -7835,10 +7651,6 @@ export function CodexAccountsPage() {
                     label: t("codex.sort.hourlyReset", "按5小时配额重置时间"),
                   },
                   {
-                    value: "subscription_expiry",
-                    label: t("codex.sort.subscriptionExpiry", "按订阅有效期"),
-                  },
-                  {
                     value: "custom",
                     label: t("codex.sort.custom", "自定义顺序"),
                   },
@@ -8140,9 +7952,6 @@ export function CodexAccountsPage() {
                           <th style={{ width: 140 }}>
                             {t("common.shared.columns.plan", "订阅")}
                           </th>
-                          <th style={{ width: 150 }}>
-                            {t("codex.subscription.column", "订阅信息")}
-                          </th>
                           <th>{t("accounts.columns.quota", "配额状态")}</th>
                           <th className="sticky-action-header table-action-header">
                             {t("common.shared.columns.actions", "操作")}
@@ -8154,7 +7963,7 @@ export function CodexAccountsPage() {
                           ({ groupKey, items, totalCount }) => (
                             <Fragment key={groupKey}>
                               <tr className="tag-group-row">
-                                <td colSpan={6}>
+                                <td colSpan={5}>
                                   <div className="tag-group-header">
                                     <span className="tag-group-title">
                                       {resolveGroupLabel(groupKey)}
@@ -8198,9 +8007,6 @@ export function CodexAccountsPage() {
                           </th>
                           <th style={{ width: 140 }}>
                             {t("common.shared.columns.plan", "订阅")}
-                          </th>
-                          <th style={{ width: 150 }}>
-                            {t("codex.subscription.column", "订阅信息")}
                           </th>
                           <th>{t("accounts.columns.quota", "配额状态")}</th>
                           <th className="sticky-action-header table-action-header">

@@ -1,6 +1,6 @@
 use crate::models::codex::{
-    CodexAccount, CodexAccountIndex, CodexAccountSummary, CodexApiProviderMode, CodexAppSpeed,
-    CodexAuthFile, CodexAuthMode, CodexAuthTokens, CodexJwtPayload, CodexQuickConfig, CodexTokens,
+    CodexAccount, CodexAccountIndex, CodexAccountSummary, CodexApiProviderMode, CodexAuthFile,
+    CodexAuthMode, CodexAuthTokens, CodexJwtPayload, CodexQuickConfig, CodexTokens,
 };
 use crate::modules::{account, codex_oauth, logger};
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
@@ -5892,19 +5892,6 @@ pub fn update_account_note(account_id: &str, note: String) -> Result<CodexAccoun
         load_account(account_id).ok_or_else(|| format!("账号不存在: {}", account_id))?;
 
     account.account_note = normalize_optional_value(Some(note));
-    save_account(&account)?;
-
-    Ok(account)
-}
-
-pub fn update_account_app_speed(
-    account_id: &str,
-    speed: CodexAppSpeed,
-) -> Result<CodexAccount, String> {
-    let mut account =
-        load_account(account_id).ok_or_else(|| format!("账号不存在: {}", account_id))?;
-
-    account.app_speed = speed;
     save_account(&account)?;
 
     Ok(account)

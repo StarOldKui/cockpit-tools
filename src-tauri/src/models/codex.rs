@@ -61,14 +61,6 @@ impl Default for CodexAppSpeed {
     }
 }
 
-/// Codex 官方 App 推理速度配置
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CodexAppSpeedConfig {
-    pub speed: CodexAppSpeed,
-    pub global_state_path: String,
-}
-
 /// Codex 账号数据结构
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CodexAccount {

@@ -67,6 +67,7 @@
 - Layout/group state: `group_settings.json`, `account_groups.json`, `codex_account_groups.json`, `codex_model_providers.json`, `tray_layout.json`, `zed_runtime.json`, and frontend layout localStorage.
 - Wakeup state: `wakeup_tasks.json`, `wakeup_history.json`, `wakeup_verification_state.json`, Codex `codex_wakeup_tasks.json`, `codex_wakeup_history.json`, `codex_wakeup_runtime_config.json`, and managed `codex_wakeup_homes/`.
 - OAuth pending state: `~/.antigravity_cockpit/oauth_pending/*.json` plus provider-specific pending files such as `codex_oauth_pending.json`, `windsurf_oauth_pending.json`, `kiro_oauth_pending.json`, `trae_oauth_pending.json`, `gemini_oauth_pending.json`, and `zed_oauth_pending.json`.
+- Codex account quotas: `src-tauri/src/modules/codex_quota.rs` resolves the Codex CLI runtime, starts `codex app-server`, supplies each saved ChatGPT account token through `chatgptAuthTokens`, reads `account/rateLimits/read`, and persists the `codex` limit as `CodexQuota`.
 - Codex local access: `codex_local_access.json` and `codex_local_access_stats.json`.
 - Antigravity quota cache: `cache/quota_api_v1_desktop/<source>/<hashed-email>.json`.
 - Logs: `~/.antigravity_cockpit/logs/app.log*` and `codex-api.log*`.
@@ -78,7 +79,7 @@
 ## Third-Party Local State Boundaries
 
 - Antigravity token injection reads/writes `state.vscdb` under platform-specific Antigravity app data.
-- Codex reads/writes `CODEX_HOME` or `~/.codex`, especially `auth.json` and `config.toml`; Codex session management also touches instance `state_5.sqlite` and `session_index.jsonl`, with deleted session material under `~/.Trash/cockpit-tools-codex-session-trash`.
+- Codex reads/writes `CODEX_HOME` or `~/.codex`, especially `auth.json` and `config.toml`; Codex session management also touches instance `state_5.sqlite` and `session_index.jsonl`, with deleted session material under `~/.Trash/cockpit-tools-codex-session-trash`. macOS Codex host detection targets `/Applications/ChatGPT.app/Contents/MacOS/ChatGPT`.
 - Gemini CLI reads/writes `~/.gemini` files such as `oauth_creds.json`, `google_accounts.json`, `settings.json`, and macOS keychain-backed credentials.
 - Qoder, Cursor, Windsurf, Kiro, CodeBuddy, CodeBuddy CN, Trae, GitHub Copilot, WorkBuddy, and Zed modules read or write vendor app storage such as `state.vscdb`, `storage.json`, local token files, and app profile directories.
 - OpenCode/OpenClaw integration writes local auth projection files when enabled by settings.
@@ -157,6 +158,8 @@
 - `src-tauri/src/commands/system.rs`
 - `src-tauri/src/modules/account.rs`
 - `src-tauri/src/modules/codex_account.rs`
+- `src-tauri/src/modules/codex_quota.rs`
+- `src-tauri/src/modules/codex_wakeup.rs`
 - `src-tauri/src/modules/process.rs`
 - `src-tauri/src/modules/websocket.rs`
 - `src-tauri/src/modules/web_report.rs`

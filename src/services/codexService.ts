@@ -2,8 +2,6 @@ import { invoke } from '@tauri-apps/api/core';
 import {
   CodexAccount,
   CodexApiProviderMode,
-  CodexAppSpeed,
-  CodexAppSpeedConfig,
   CodexQuickConfig,
   CodexQuota,
 } from '../types/codex';
@@ -47,31 +45,6 @@ export async function saveCodexQuickConfig(
     modelContextWindow: modelContextWindow ?? null,
     autoCompactTokenLimit: autoCompactTokenLimit ?? null,
   });
-}
-
-/** 获取 Codex 官方 App 速度配置 */
-export async function getCodexAppSpeedConfig(): Promise<CodexAppSpeedConfig> {
-  return await invoke('get_codex_app_speed_config');
-}
-
-/** 保存 Codex 官方 App 速度配置 */
-export async function saveCodexAppSpeed(speed: CodexAppSpeed): Promise<CodexAppSpeedConfig> {
-  return await invoke('save_codex_app_speed', { speed });
-}
-
-export async function getCodexApiServiceAppSpeedConfig(): Promise<CodexAppSpeedConfig> {
-  return await invoke('get_codex_api_service_app_speed_config');
-}
-
-export async function saveCodexApiServiceAppSpeed(speed: CodexAppSpeed): Promise<CodexAppSpeedConfig> {
-  return await invoke('save_codex_api_service_app_speed', { speed });
-}
-
-export async function updateCodexAccountAppSpeed(
-  accountId: string,
-  speed: CodexAppSpeed,
-): Promise<CodexAccount> {
-  return await invoke('update_codex_account_app_speed', { accountId, speed });
 }
 
 /** 刷新 Codex 账号资料（团队名/结构） */

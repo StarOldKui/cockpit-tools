@@ -1,50 +1,21 @@
 use crate::models::codex::{CodexAccount, CodexQuota, CodexQuotaErrorInfo};
-use crate::modules::{codex_account, logger};
-use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, AUTHORIZATION};
+use crate::modules::{codex_account, codex_wakeup, logger};
+use reqwest::header::ACCEPT;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde_json::{json, Value};
+use std::collections::HashMap;
+use std::process::Stdio;
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, Lines};
+use tokio::process::{ChildStdin, ChildStdout, Command};
+use tokio::time::{timeout, Duration};
 
-// 使用 wham/usage 端点（Quotio 使用的）
-const USAGE_URL: &str = "https://chatgpt.com/backend-api/wham/usage";
 const COCKPIT_API_PROVIDER_ID: &str = "cockpit_api";
 const LEGACY_NEW_API_PROVIDER_ID: &str = "new_api";
 const COCKPIT_API_PLAN_TYPE: &str = "Cockpit Api";
 const LEGACY_NEW_API_EXCLUSIVE_PLAN_TYPE: &str = "NEW_API_EXCLUSIVE";
 const COCKPIT_API_BASE_URL: &str = "https://chongcodex.cn/v1";
-
-fn get_header_value(headers: &HeaderMap, name: &str) -> String {
-    headers
-        .get(name)
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("-")
-        .to_string()
-}
-
-fn extract_detail_code_from_body(body: &str) -> Option<String> {
-    let value: serde_json::Value = serde_json::from_str(body).ok()?;
-
-    if let Some(code) = value
-        .get("detail")
-        .and_then(|detail| detail.get("code"))
-        .and_then(|code| code.as_str())
-    {
-        return Some(code.to_string());
-    }
-
-    if let Some(code) = value
-        .get("error")
-        .and_then(|error| error.get("code"))
-        .and_then(|code| code.as_str())
-    {
-        return Some(code.to_string());
-    }
-
-    if let Some(code) = value.get("code").and_then(|code| code.as_str()) {
-        return Some(code.to_string());
-    }
-
-    None
-}
+const APP_SERVER_TIMEOUT: Duration = Duration::from_secs(20);
+const APP_SERVER_REFRESH_TOKEN_REQUESTED: &str = "Codex app-server 请求刷新 ChatGPT token";
 
 fn extract_error_code_from_message(message: &str) -> Option<String> {
     let marker = "[error_code:";
@@ -77,72 +48,66 @@ fn write_quota_error(account: &mut CodexAccount, message: String) {
     });
 }
 
-/// 使用率窗口（5小时/周）
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct WindowInfo {
-    #[serde(rename = "used_percent")]
-    used_percent: Option<i32>,
-    #[serde(rename = "limit_window_seconds")]
-    limit_window_seconds: Option<i64>,
-    #[serde(rename = "reset_after_seconds")]
-    reset_after_seconds: Option<i64>,
-    #[serde(rename = "reset_at")]
-    reset_at: Option<i64>,
+struct AppServerWindow {
+    #[serde(rename = "usedPercent")]
+    used_percent: Option<f64>,
+    #[serde(rename = "windowDurationMins")]
+    window_duration_mins: Option<i64>,
+    #[serde(rename = "resetsAt")]
+    resets_at: Option<i64>,
 }
 
-/// 速率限制信息
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct RateLimitInfo {
-    allowed: Option<bool>,
-    #[serde(rename = "limit_reached")]
-    limit_reached: Option<bool>,
-    #[serde(rename = "primary_window")]
-    primary_window: Option<WindowInfo>,
-    #[serde(rename = "secondary_window")]
-    secondary_window: Option<WindowInfo>,
+struct AppServerRateLimit {
+    #[serde(rename = "limitId")]
+    limit_id: Option<String>,
+    #[serde(rename = "limitName")]
+    limit_name: Option<String>,
+    primary: Option<AppServerWindow>,
+    secondary: Option<AppServerWindow>,
+    #[serde(rename = "rateLimitReachedType")]
+    rate_limit_reached_type: Option<String>,
 }
 
-/// 使用率响应
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct UsageResponse {
-    #[serde(rename = "plan_type")]
+#[derive(Debug, Clone, Deserialize)]
+struct AppServerRateLimitsResult {
+    #[serde(rename = "rateLimits")]
+    rate_limits: Option<AppServerRateLimit>,
+    #[serde(rename = "rateLimitsByLimitId")]
+    rate_limits_by_limit_id: Option<HashMap<String, AppServerRateLimit>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct AppServerError {
+    code: Option<i64>,
+    message: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct AppServerMessage {
+    id: Option<i64>,
+    method: Option<String>,
+    result: Option<Value>,
+    error: Option<AppServerError>,
+}
+
+fn normalize_app_server_remaining_percentage(window: &AppServerWindow) -> i32 {
+    let used = window.used_percent.unwrap_or(0.0).clamp(0.0, 100.0);
+    (100.0 - used).round().clamp(0.0, 100.0) as i32
+}
+
+fn normalize_app_server_window_minutes(window: &AppServerWindow) -> Option<i64> {
+    window.window_duration_mins.filter(|value| *value > 0)
+}
+
+fn normalize_app_server_reset_time(window: &AppServerWindow) -> Option<i64> {
+    window.resets_at.filter(|value| *value > 0)
+}
+
+struct FetchQuotaResult {
+    quota: CodexQuota,
     plan_type: Option<String>,
-    #[serde(rename = "rate_limit")]
-    rate_limit: Option<RateLimitInfo>,
-    #[serde(rename = "code_review_rate_limit")]
-    code_review_rate_limit: Option<RateLimitInfo>,
-}
-
-fn normalize_remaining_percentage(window: &WindowInfo) -> i32 {
-    let used = window.used_percent.unwrap_or(0).clamp(0, 100);
-    100 - used
-}
-
-fn normalize_window_minutes(window: &WindowInfo) -> Option<i64> {
-    let seconds = window.limit_window_seconds?;
-    if seconds <= 0 {
-        return None;
-    }
-    Some((seconds + 59) / 60)
-}
-
-fn normalize_reset_time(window: &WindowInfo) -> Option<i64> {
-    if let Some(reset_at) = window.reset_at {
-        return Some(reset_at);
-    }
-
-    let reset_after_seconds = window.reset_after_seconds?;
-    if reset_after_seconds < 0 {
-        return None;
-    }
-
-    Some(chrono::Utc::now().timestamp() + reset_after_seconds)
-}
-
-/// 配额查询结果（包含 plan_type）
-pub struct FetchQuotaResult {
-    pub quota: CodexQuota,
-    pub plan_type: Option<String>,
 }
 
 async fn refresh_account_tokens(account: &mut CodexAccount, reason: &str) -> Result<(), String> {
@@ -158,126 +123,221 @@ async fn refresh_account_tokens(account: &mut CodexAccount, reason: &str) -> Res
     Ok(())
 }
 
-/// 查询单个账号的配额
-pub async fn fetch_quota(account: &CodexAccount) -> Result<FetchQuotaResult, String> {
-    let client = reqwest::Client::new();
-
-    let mut headers = HeaderMap::new();
-    headers.insert(
-        AUTHORIZATION,
-        HeaderValue::from_str(&format!("Bearer {}", account.tokens.access_token))
-            .map_err(|e| format!("构建 Authorization 头失败: {}", e))?,
-    );
-    headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
-
-    // 添加 ChatGPT-Account-Id 头（关键！）
+async fn fetch_app_server_quota(account: &CodexAccount) -> Result<FetchQuotaResult, String> {
     let account_id = account.account_id.clone().or_else(|| {
         codex_account::extract_chatgpt_account_id_from_access_token(&account.tokens.access_token)
     });
-
-    if let Some(ref acc_id) = account_id {
-        if !acc_id.is_empty() {
-            headers.insert(
-                "ChatGPT-Account-Id",
-                HeaderValue::from_str(acc_id)
-                    .map_err(|e| format!("构建 Account-Id 头失败: {}", e))?,
-            );
-        }
-    }
+    let account_id = account_id
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| "Codex access_token 缺少 ChatGPT 账号 ID".to_string())?;
 
     logger::log_info(&format!(
-        "Codex 配额请求: {} (account_id: {:?})",
-        USAGE_URL, account_id
+        "Codex 配额请求: codex app-server account/rateLimits/read (account_id: {})",
+        account_id
     ));
 
-    let response = client
-        .get(USAGE_URL)
-        .headers(headers)
-        .send()
-        .await
-        .map_err(|e| format!("请求失败: {}", e))?;
+    let raw_result = fetch_app_server_rate_limits(account, &account_id).await?;
+    let quota = parse_quota_from_app_server_result(raw_result)?;
 
-    let status = response.status();
-    let headers = response.headers().clone();
-    let body = response
-        .text()
-        .await
-        .map_err(|e| format!("读取响应失败: {}", e))?;
-
-    let request_id = get_header_value(&headers, "request-id");
-    let x_request_id = get_header_value(&headers, "x-request-id");
-    let cf_ray = get_header_value(&headers, "cf-ray");
-    let body_len = body.len();
-
-    logger::log_info(&format!(
-        "Codex 配额响应元信息: url={}, status={}, request-id={}, x-request-id={}, cf-ray={}, body_len={}",
-        USAGE_URL, status, request_id, x_request_id, cf_ray, body_len
-    ));
-
-    if !status.is_success() {
-        let detail_code = extract_detail_code_from_body(&body);
-
-        logger::log_error(&format!(
-            "Codex 配额接口返回非成功状态: url={}, status={}, request-id={}, x-request-id={}, cf-ray={}, detail_code={:?}, body_len={}",
-            USAGE_URL,
-            status,
-            request_id,
-            x_request_id,
-            cf_ray,
-            detail_code,
-            body_len
-        ));
-
-        let mut error_message = format!("API 返回错误 {}", status);
-        if let Some(code) = detail_code {
-            error_message.push_str(&format!(" [error_code:{}]", code));
-        }
-        error_message.push_str(&format!(" [body_len:{}]", body_len));
-        return Err(error_message);
-    }
-
-    // 解析响应
-    let usage: UsageResponse =
-        serde_json::from_str(&body).map_err(|e| format!("解析 JSON 失败: {}", e))?;
-
-    let quota = parse_quota_from_usage(&usage, &body)?;
-    let plan_type = usage.plan_type.clone();
-
-    Ok(FetchQuotaResult { quota, plan_type })
+    Ok(FetchQuotaResult {
+        quota,
+        plan_type: None,
+    })
 }
 
-/// 从使用率响应中解析配额信息
-fn parse_quota_from_usage(usage: &UsageResponse, raw_body: &str) -> Result<CodexQuota, String> {
-    let rate_limit = usage.rate_limit.as_ref();
-    let primary_window = rate_limit.and_then(|r| r.primary_window.as_ref());
-    let secondary_window = rate_limit.and_then(|r| r.secondary_window.as_ref());
+async fn fetch_app_server_rate_limits(
+    account: &CodexAccount,
+    account_id: &str,
+) -> Result<Value, String> {
+    let mut child = spawn_codex_app_server()?;
+    let result = run_app_server_rate_limit_read(&mut child, account, account_id).await;
+    let _ = child.kill().await;
+    let _ = child.wait().await;
+    result
+}
 
-    // Primary window = 5小时配额（session）
+fn spawn_codex_app_server() -> Result<tokio::process::Child, String> {
+    let runtime = codex_wakeup::resolve_cli_runtime()?;
+    let mut command = if let Some(node_path) = runtime.node_path {
+        let mut command = Command::new(node_path);
+        command.arg(runtime.binary_path);
+        command
+    } else {
+        Command::new(runtime.binary_path)
+    };
+    command
+        .arg("app-server")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null());
+    command
+        .spawn()
+        .map_err(|e| format!("启动 Codex app-server 失败: {}", e))
+}
+
+async fn run_app_server_rate_limit_read(
+    child: &mut tokio::process::Child,
+    account: &CodexAccount,
+    account_id: &str,
+) -> Result<Value, String> {
+    let mut stdin = child
+        .stdin
+        .take()
+        .ok_or_else(|| "Codex app-server stdin 不可用".to_string())?;
+    let stdout = child
+        .stdout
+        .take()
+        .ok_or_else(|| "Codex app-server stdout 不可用".to_string())?;
+    let mut lines = BufReader::new(stdout).lines();
+
+    send_app_server_message(
+        &mut stdin,
+        json!({
+            "method": "initialize",
+            "id": 1,
+            "params": {
+                "clientInfo": {
+                    "name": "cockpit_tools",
+                    "title": "Cockpit Tools",
+                    "version": env!("CARGO_PKG_VERSION")
+                },
+                "capabilities": {
+                    "experimentalApi": true
+                }
+            }
+        }),
+    )
+    .await?;
+    read_app_server_result(&mut lines, 1).await?;
+
+    send_app_server_message(
+        &mut stdin,
+        json!({
+            "method": "initialized",
+            "params": {}
+        }),
+    )
+    .await?;
+
+    let mut login_params = serde_json::Map::new();
+    login_params.insert("type".to_string(), json!("chatgptAuthTokens"));
+    login_params.insert(
+        "accessToken".to_string(),
+        json!(account.tokens.access_token.clone()),
+    );
+    login_params.insert("chatgptAccountId".to_string(), json!(account_id));
+    if let Some(plan_type) = account
+        .plan_type
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        login_params.insert("chatgptPlanType".to_string(), json!(plan_type));
+    }
+
+    send_app_server_message(
+        &mut stdin,
+        json!({
+            "method": "account/login/start",
+            "id": 2,
+            "params": Value::Object(login_params)
+        }),
+    )
+    .await?;
+    read_app_server_result(&mut lines, 2).await?;
+
+    send_app_server_message(
+        &mut stdin,
+        json!({
+            "method": "account/rateLimits/read",
+            "id": 3
+        }),
+    )
+    .await?;
+    read_app_server_result(&mut lines, 3).await
+}
+
+async fn send_app_server_message(stdin: &mut ChildStdin, message: Value) -> Result<(), String> {
+    let mut payload =
+        serde_json::to_vec(&message).map_err(|e| format!("序列化 app-server 请求失败: {}", e))?;
+    payload.push(b'\n');
+    stdin
+        .write_all(&payload)
+        .await
+        .map_err(|e| format!("写入 app-server 请求失败: {}", e))?;
+    stdin
+        .flush()
+        .await
+        .map_err(|e| format!("刷新 app-server 请求失败: {}", e))
+}
+
+async fn read_app_server_result(
+    lines: &mut Lines<BufReader<ChildStdout>>,
+    target_id: i64,
+) -> Result<Value, String> {
+    loop {
+        let line = timeout(APP_SERVER_TIMEOUT, lines.next_line())
+            .await
+            .map_err(|_| "等待 Codex app-server 响应超时".to_string())?
+            .map_err(|e| format!("读取 app-server 响应失败: {}", e))?
+            .ok_or_else(|| "Codex app-server 已退出".to_string())?;
+        let message: AppServerMessage =
+            serde_json::from_str(&line).map_err(|e| format!("解析 app-server 响应失败: {}", e))?;
+
+        if message.method.as_deref() == Some("account/chatgptAuthTokens/refresh") {
+            return Err(APP_SERVER_REFRESH_TOKEN_REQUESTED.to_string());
+        }
+
+        if message.id != Some(target_id) {
+            continue;
+        }
+
+        if let Some(error) = message.error {
+            let mut message = error
+                .message
+                .unwrap_or_else(|| "Codex app-server 请求失败".to_string());
+            if let Some(code) = error.code {
+                message.push_str(&format!(" [error_code:{}]", code));
+            }
+            return Err(message);
+        }
+
+        return message
+            .result
+            .ok_or_else(|| "Codex app-server 响应缺少 result".to_string());
+    }
+}
+
+fn parse_quota_from_app_server_result(raw_result: Value) -> Result<CodexQuota, String> {
+    let result: AppServerRateLimitsResult = serde_json::from_value(raw_result)
+        .map_err(|e| format!("解析 app-server 配额 JSON 失败: {}", e))?;
+    let rate_limit = resolve_app_server_codex_rate_limit(&result)
+        .ok_or_else(|| "app-server 配额响应缺少 codex rateLimits".to_string())?;
+    let primary_window = rate_limit.primary.as_ref();
+    let secondary_window = rate_limit.secondary.as_ref();
+
     let (hourly_percentage, hourly_reset_time, hourly_window_minutes) =
         if let Some(primary) = primary_window {
             (
-                normalize_remaining_percentage(primary),
-                normalize_reset_time(primary),
-                normalize_window_minutes(primary),
+                normalize_app_server_remaining_percentage(primary),
+                normalize_app_server_reset_time(primary),
+                normalize_app_server_window_minutes(primary),
             )
         } else {
             (100, None, None)
         };
 
-    // Secondary window = 周配额
     let (weekly_percentage, weekly_reset_time, weekly_window_minutes) =
         if let Some(secondary) = secondary_window {
             (
-                normalize_remaining_percentage(secondary),
-                normalize_reset_time(secondary),
-                normalize_window_minutes(secondary),
+                normalize_app_server_remaining_percentage(secondary),
+                normalize_app_server_reset_time(secondary),
+                normalize_app_server_window_minutes(secondary),
             )
         } else {
             (100, None, None)
         };
-
-    // 保存原始响应
-    let raw_data: Option<serde_json::Value> = serde_json::from_str(raw_body).ok();
 
     Ok(CodexQuota {
         hourly_percentage,
@@ -288,7 +348,47 @@ fn parse_quota_from_usage(usage: &UsageResponse, raw_body: &str) -> Result<Codex
         weekly_reset_time,
         weekly_window_minutes,
         weekly_window_present: Some(secondary_window.is_some()),
-        raw_data,
+        raw_data: Some(build_app_server_raw_data(rate_limit)),
+    })
+}
+
+fn resolve_app_server_codex_rate_limit<'a>(
+    result: &'a AppServerRateLimitsResult,
+) -> Option<&'a AppServerRateLimit> {
+    result
+        .rate_limits_by_limit_id
+        .as_ref()
+        .and_then(|limits| limits.get("codex"))
+        .or_else(|| {
+            result
+                .rate_limits
+                .as_ref()
+                .filter(|rate_limit| rate_limit.limit_id.as_deref() == Some("codex"))
+        })
+        .or(result.rate_limits.as_ref())
+}
+
+fn app_server_window_to_legacy_raw(window: Option<&AppServerWindow>) -> Value {
+    match window {
+        Some(window) => json!({
+            "used_percent": window.used_percent,
+            "limit_window_seconds": window.window_duration_mins.map(|value| value * 60),
+            "reset_at": window.resets_at,
+        }),
+        None => Value::Null,
+    }
+}
+
+fn build_app_server_raw_data(rate_limit: &AppServerRateLimit) -> Value {
+    json!({
+        "provider": "codex-app-server",
+        "rate_limit": {
+            "allowed": rate_limit.rate_limit_reached_type.is_none(),
+            "limit_reached": rate_limit.rate_limit_reached_type.is_some(),
+            "primary_window": app_server_window_to_legacy_raw(rate_limit.primary.as_ref()),
+            "secondary_window": app_server_window_to_legacy_raw(rate_limit.secondary.as_ref()),
+        },
+        "rateLimits": rate_limit,
     })
 }
 
@@ -508,6 +608,21 @@ fn sync_subscription_expiry_from_current_id_token(account: &mut CodexAccount) {
     }
 }
 
+async fn fetch_app_server_quota_with_token_refresh(
+    account: &mut CodexAccount,
+) -> Result<FetchQuotaResult, String> {
+    match fetch_app_server_quota(account).await {
+        Ok(result) => Ok(result),
+        Err(e) if e == APP_SERVER_REFRESH_TOKEN_REQUESTED => {
+            refresh_account_tokens(account, APP_SERVER_REFRESH_TOKEN_REQUESTED).await?;
+            sync_subscription_expiry_from_current_id_token(account);
+            codex_account::save_account(account)?;
+            fetch_app_server_quota(account).await
+        }
+        Err(e) => Err(e),
+    }
+}
+
 /// 刷新账号配额并保存（包含 token 自动刷新）
 async fn refresh_account_quota_once(account_id: &str) -> Result<CodexQuota, String> {
     let mut account = codex_account::prepare_account_for_injection(account_id).await?;
@@ -523,8 +638,8 @@ async fn refresh_account_quota_once(account_id: &str) -> Result<CodexQuota, Stri
                     return Err(e);
                 }
             };
-            if result.plan_type.is_some() {
-                sync_subscription_from_token(&mut account, result.plan_type, None);
+            if let Some(plan_type) = result.plan_type {
+                sync_subscription_from_token(&mut account, Some(plan_type), None);
             }
             account.quota = Some(result.quota.clone());
             account.quota_error = None;
@@ -561,7 +676,7 @@ async fn refresh_account_quota_once(account_id: &str) -> Result<CodexQuota, Stri
         }
     }
 
-    let result = match fetch_quota(&account).await {
+    let result = match fetch_app_server_quota_with_token_refresh(&mut account).await {
         Ok(result) => result,
         Err(e) => {
             write_quota_error(&mut account, e.clone());
@@ -572,9 +687,8 @@ async fn refresh_account_quota_once(account_id: &str) -> Result<CodexQuota, Stri
         }
     };
 
-    // 从 usage 响应中的 plan_type 更新订阅标识
-    if result.plan_type.is_some() {
-        sync_subscription_from_token(&mut account, result.plan_type, None);
+    if let Some(plan_type) = result.plan_type {
+        sync_subscription_from_token(&mut account, Some(plan_type), None);
     }
 
     account.quota = Some(result.quota.clone());

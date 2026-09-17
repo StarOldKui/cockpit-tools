@@ -12,7 +12,11 @@ const OPENCODE_APP_NAME: &str = "OpenCode";
 #[cfg(target_os = "macos")]
 const TRAE_APP_NAME: &str = "Trae";
 #[cfg(target_os = "macos")]
-const CODEX_APP_PATH: &str = "/Applications/Codex.app/Contents/MacOS/Codex";
+const CODEX_PROCESS_BUNDLE_EXEC: &str = "ChatGPT.app/Contents/MacOS/ChatGPT";
+#[cfg(target_os = "macos")]
+const CODEX_PROCESS_MATCH: &str = "chatgpt.app/contents/macos/chatgpt";
+#[cfg(target_os = "macos")]
+const CODEX_APP_PATH: &str = "/Applications/ChatGPT.app/Contents/MacOS/ChatGPT";
 #[cfg(target_os = "macos")]
 const ANTIGRAVITY_APP_PATH: &str = "/Applications/Antigravity.app/Contents/MacOS/Electron";
 #[cfg(target_os = "macos")]
@@ -1488,7 +1492,7 @@ fn find_codex_process_exe() -> Option<std::path::PathBuf> {
         let _pid_str = parts.next().unwrap_or("").trim();
         let cmdline = parts.next().unwrap_or("").trim();
         let lower = cmdline.to_lowercase();
-        if !lower.contains("codex.app/contents/macos/codex") {
+        if !lower.contains(CODEX_PROCESS_MATCH) {
             continue;
         }
         if lower.contains("--type=") || lower.contains("crashpad_handler") {
@@ -2906,7 +2910,7 @@ fn resolve_workbuddy_launch_path() -> Result<std::path::PathBuf, String> {
 #[cfg(target_os = "macos")]
 fn resolve_codex_launch_path() -> Result<std::path::PathBuf, String> {
     if let Some(custom) = normalize_custom_path(Some(&config::get_user_config().codex_app_path)) {
-        if let Some(exec) = resolve_macos_exec_path(&custom, "Codex") {
+        if let Some(exec) = resolve_macos_exec_path(&custom, "ChatGPT") {
             return Ok(exec);
         }
         return Err(app_path_missing_error("codex"));
@@ -6413,7 +6417,7 @@ pub fn collect_codex_process_entries() -> Vec<(u32, Option<String>)> {
     let mut result = Vec::new();
     let mut pids: Vec<u32> = Vec::new();
     if let Ok(output) = Command::new("pgrep")
-        .args(["-f", "Codex.app/Contents/MacOS/Codex"])
+        .args(["-f", CODEX_PROCESS_BUNDLE_EXEC])
         .output()
     {
         if output.status.success() {
@@ -6446,10 +6450,7 @@ pub fn collect_codex_process_entries() -> Vec<(u32, Option<String>)> {
                 Ok(value) => value,
                 Err(_) => continue,
             };
-            if !cmdline
-                .to_lowercase()
-                .contains("codex.app/contents/macos/codex")
-            {
+            if !cmdline.to_lowercase().contains(CODEX_PROCESS_MATCH) {
                 continue;
             }
             pids.push(pid);
@@ -6475,7 +6476,7 @@ pub fn collect_codex_process_entries() -> Vec<(u32, Option<String>)> {
             continue;
         }
         let lower = cmdline.to_lowercase();
-        if !lower.contains("codex.app/contents/macos/codex") {
+        if !lower.contains(CODEX_PROCESS_MATCH) {
             continue;
         }
         let tokens = split_command_tokens(&cmdline);

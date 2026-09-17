@@ -9,11 +9,6 @@ export interface CodexQuickConfig {
 
 export type CodexAppSpeed = "standard" | "fast";
 
-export interface CodexAppSpeedConfig {
-  speed: CodexAppSpeed;
-  globalStatePath: string;
-}
-
 /** Codex 账号数据 */
 export interface CodexAccount {
   id: string;
