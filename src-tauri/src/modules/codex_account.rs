@@ -826,7 +826,23 @@ fn write_api_provider_to_config_toml(
 
     match provider_config.mode {
         CodexApiProviderMode::OpenaiBuiltin => {
-            let _ = doc.remove(CODEX_CONFIG_MODEL_PROVIDER_KEY);
+            let managed_provider_ids = collect_managed_api_key_provider_ids();
+            let preserved_provider_id = doc
+                .get(CODEX_CONFIG_MODEL_PROVIDER_KEY)
+                .and_then(|item| item.as_str())
+                .map(str::trim)
+                .filter(|provider_id| !provider_id.is_empty())
+                .filter(|provider_id| !managed_provider_ids.contains(*provider_id))
+                .map(str::to_string);
+            match preserved_provider_id.as_deref() {
+                Some(provider_id) => logger::log_info(&format!(
+                    "[Codex切号] config.toml 中的 model_provider 非 Cockpit 托管，保留不动: {}",
+                    provider_id
+                )),
+                None => {
+                    let _ = doc.remove(CODEX_CONFIG_MODEL_PROVIDER_KEY);
+                }
+            }
             remove_managed_api_key_model_providers_from_doc(&mut doc);
             match normalized.as_deref() {
                 Some(base_url) => {
@@ -5347,6 +5363,47 @@ requires_openai_auth = false
                 base_url: None,
                 provider_id: None,
                 provider_name: None,
+            }
+        );
+
+        fs::remove_dir_all(&base_dir).expect("cleanup temp dir");
+    }
+
+    #[test]
+    fn config_toml_keeps_unmanaged_model_provider_for_builtin_openai() {
+        let base_dir = make_temp_dir("codex-config-keep-unmanaged-provider-test");
+        let config_path = base_dir.join("config.toml");
+        fs::write(
+            &config_path,
+            r#"model_provider = "user_manual_relay"
+
+[model_providers.user_manual_relay]
+name = "Manual Relay"
+base_url = "https://relay.example.com/v1"
+wire_api = "responses"
+"#,
+        )
+        .expect("write unmanaged provider config");
+        let provider_config = resolve_api_provider_config(
+            None,
+            Some(CodexApiProviderMode::OpenaiBuiltin),
+            None,
+            None,
+        )
+        .expect("resolve provider config");
+
+        write_api_provider_to_config_toml(&base_dir, &provider_config).expect("write config");
+
+        let content = fs::read_to_string(&config_path).expect("read config");
+        assert!(content.contains("model_provider = \"user_manual_relay\""));
+        assert!(content.contains("[model_providers.user_manual_relay]"));
+        assert_eq!(
+            read_api_provider_from_config_toml(&base_dir),
+            ApiProviderConfig {
+                mode: CodexApiProviderMode::Custom,
+                base_url: Some("https://relay.example.com/v1".to_string()),
+                provider_id: Some("user_manual_relay".to_string()),
+                provider_name: Some("Manual Relay".to_string()),
             }
         );
 
